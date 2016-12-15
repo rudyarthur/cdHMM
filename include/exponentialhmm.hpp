@@ -37,20 +37,6 @@ public:
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 	}
-	
-	void initB(vector<obs_type> &O){
-		this->initB();
-		double av = 0;
-		int nm = 0;
-		for(int t=0; t<O.size(); ++t){
-			if(O[t] != 0){ av += O[t]-this->lb[0]; ++nm; }
-		}
-		av /= nm;
-		for(int i=0; i<this->N; ++i){
-			this->B[i][0] = 1.0/av;
-		}
-		this->calc_logB();
-	}
 
 	
 	inline double pB(int i, obs_type O){

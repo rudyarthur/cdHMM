@@ -15,12 +15,12 @@
 #include "gammahmm.hpp" 
 #include "lognormalhmm.hpp" 
 #include "paretohmm.hpp"
+#include "laplacehmm.hpp" 
 
 /*
 #include "discretehmm.hpp" 
 #include "poissonhmm.hpp" 
 
-#include "laplacehmm.hpp" 
 
 #include "gumbelhmm.hpp" 
 #include "weibullhmm.hpp" 
@@ -109,21 +109,6 @@ int main(int argc,char **argv){
 
 	transform(test_string.begin(), test_string.end(), test_string.begin(), ::tolower);    
     bool doall = (test_string == "all") ? true : false;
-
-	bool test_gaussian = false;
-	bool test_exponential = false;
-	bool test_gamma = false;
-	bool test_lognormal = true;
-
-	/*bool test_poisson = false;
-	bool test_multinomial = false;
-	bool test_joint = false;
-	bool test_laplace = false;
-	bool test_gumbel = false;
-	bool test_weibull = false;
-	bool test_extremevalue = true;
-	bool test_pareto = false;
-	bool test_multi = false;*/
 	
 	//Gaussian emission
 	if( doall || test_string == "gaussian") {
@@ -264,6 +249,77 @@ int main(int argc,char **argv){
 		hmm.sortparams();
 		output_check<double>(&hmm, A, B, pi);
 		
+	}//Pareto
+	if( doall || test_string == "pareto") {
+		
+		int N=2;
+		int M=1;
+		
+		vector<vector<double> > A(N, vector<double>(N));
+		vector<vector<double> > B(N, vector<double>(M));
+		vector<double> pi(N);
+		
+		A[0][0] = 0.9; A[0][1] = 0.1; 
+		A[1][0] = 0.1; A[1][1] = 0.9;
+
+		B[0][0] = 2; 
+		B[1][0] = 1; 
+		
+		pi[0] = 0.6; pi[1] = 0.4;
+		
+		paretoHMM<double> hmm(N,0,1000000);
+		hmm.info(); 
+		hmm.init();
+
+		hmm.A = A; hmm.B = B; hmm.pi = pi;
+		hmm.lb[0] = 1;
+		hmm.lb[1] = 1;
+			
+		int T = 10000;
+		vector<double> O(T);
+		hmm.generate_seq(O, T, false);
+		
+		hmm.init();
+		hmm.fit(O, 1e-5);
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
+		
+	}
+	//Laplace
+	if( doall || test_string == "laplace") {
+		
+		int N=2;
+		int M=2;
+		
+		vector<vector<double> > A(N, vector<double>(N));
+		vector<vector<double> > B(N, vector<double>(M));
+		vector<double> pi(N);
+		
+		A[0][0] = 0.9; A[0][1] = 0.1; 
+		A[1][0] = 0.1; A[1][1] = 0.9;
+
+		B[0][0] = 15; B[0][1] = 0.5;
+		B[1][0] = 0; B[1][1] = 1; 
+		
+		pi[0] = 0.6; pi[1] = 0.4;
+		
+		laplaceHMM<double> hmm(N,0,1000000); 
+		hmm.info(); 
+		hmm.init();
+
+		hmm.A = A; hmm.B = B; hmm.pi = pi;
+		
+		srand(1234567);
+		
+		int T = 10000;
+		vector<double> O(T);
+		hmm.generate_seq(O, T, false);
+		
+		hmm.init();
+		hmm.fit(O, 1e-10);
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
+		
 	}
 	//Poisson emission
 	/*if( test_poisson ) {
@@ -391,50 +447,6 @@ int main(int argc,char **argv){
 		cout << "A = "; hmm.printA();
 		cout << "B = "; hmm.printB();
 		cout << "pi = "; hmm.printpi();
-	}
-	//Laplace
-	if( test_laplace ) {
-		
-		int N=2;
-		int M=2;
-		
-		vector<vector<double> > A(N, vector<double>(N));
-		vector<vector<double> > B(N, vector<double>(M));
-		vector<double> pi(N);
-		
-		A[0][0] = 0.9; A[0][1] = 0.1; 
-		A[1][0] = 0.1; A[1][1] = 0.9;
-
-		B[0][0] = 0; B[0][1] = 1;
-		B[1][0] = 15; B[1][1] = 0.5; 
-		
-		pi[0] = 0.6; pi[1] = 0.4;
-		
-		cout << "Laplace Emission" << endl;
-
-		laplaceHMM<double> hmm(N,0,1000000); 
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		srand(1234567);
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init(); 
-		hmm.fit(O, false, 1e-10);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
-		
-		hmm.init(); 
-		hmm.fit(O, true, 1e-10);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
-		
 	}
 	//Gumbel
 	if( test_gumbel ) {
@@ -590,50 +602,6 @@ int main(int argc,char **argv){
 		cout << "B = "; hmm.printB();
 		cout << "pi = "; hmm.printpi();
 			
-	}//Pareto
-	if( test_pareto ) {
-		
-		int N=2;
-		int M=1;
-		
-		vector<vector<double> > A(N, vector<double>(N));
-		vector<vector<double> > B(N, vector<double>(M));
-		vector<double> pi(N);
-		
-		//A[0][0] = 1;
-		A[0][0] = 0.9; A[0][1] = 0.1; 
-		A[1][0] = 0.1; A[1][1] = 0.9;
-
-		B[0][0] = 2; 
-		B[1][0] = 1; 
-		
-		//pi[0] = 1;
-		pi[0] = 0.6; pi[1] = 0.4;
-		
-		//cout << "Pareto Emission" << endl;
-
-		paretoHMM<double> hmm(N,0,1000000); 
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		hmm.lb[0] = 1;
-		hmm.lb[1] = 1;
-			
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init(); 
-		hmm.fit(O, false, 1e-5);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
-		
-		hmm.init();
-		hmm.fit(O, true, 1e-5);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
 	}//multi emission
 	if( test_multi ) {
 		

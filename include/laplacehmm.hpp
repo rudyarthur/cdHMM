@@ -16,20 +16,27 @@ public:
 	laplaceHMM(){
 		this->setsize(0,2);
 		this->setIters(0,0);
+		
+		this->type = "Laplace";
 	}
 	
 	//Constructor
 	laplaceHMM(int N_, int min_, int max_){
 		this->setsize(N_,2);
 		this->setIters(min_,max_);
+		
+		this->type = "Laplace";
+	}
+		
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = (1 / 2b_i ) exp( -|x - mu_i|/b_i )\n";
+		cerr << "mu_i = B[i][0]\n";
+		cerr << "b_i = B[i][1]" << endl;
 	}
 	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
-	}
-	
-	void initB(vector<obs_type> &O){
-		this->initB();
 	}
 
 	

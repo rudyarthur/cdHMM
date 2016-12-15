@@ -20,7 +20,7 @@ vector<double> log_factor;
 		this->setsize(0,2);
 		this->setIters(0,0);
 		
-		this->type = "Log-normal";
+		this->type = "Lognormal";
 	}
 	
 	//Constructor
@@ -30,7 +30,7 @@ vector<double> log_factor;
 		factor.resize(N_);
 		log_factor.resize(N_);
 		
-		this->type = "Log-normal";
+		this->type = "Lognormal";
 	}
 	
 	void info(){

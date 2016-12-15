@@ -31,6 +31,13 @@ vector<double> lb;
 		this->type = "Pareto";
 	}
 	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = a_i lb_i^a_i / x^(a_i+1) if x > lb_i else 0\n";
+		cerr << "a_i = B[i][0]\n";
+		cerr << "lb_i is fixed by user. Default is 0." << endl;
+	}
+	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 		for(int i=0; i<this->N; ++i){
@@ -58,7 +65,7 @@ vector<double> lb;
 
 			double av = 0;
 			for(int t=0; t<O.size(); ++t){
-				av += (log(O[t]) - log(lb[i])) * this->gamma[i][t];
+				av += (this->logO[t] - log(lb[i])) * this->gamma[i][t];
 			}
 			this->B[i][0] = this->sumgamma[i]/av;
 
@@ -78,8 +85,8 @@ vector<double> lb;
 	}	
 
 	obs_type gen_obs(int state){
-		exponential_distribution<double> b_dist(this->B[state][0]); return lb[state] * exp( b_dist(this->generator) );
-		//exponential_distribution<double> b_dist(this->B[state][1]); return this->B[state][0] * exp( b_dist(this->generator) );
+		exponential_distribution<double> b_dist(this->B[state][0]); 
+		return lb[state] * exp( b_dist(this->generator) );
 	}
 	
 	
