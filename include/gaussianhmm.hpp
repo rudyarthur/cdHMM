@@ -12,6 +12,7 @@ using namespace std;
 template <typename obs_type> class gaussianHMM : public HMM<obs_type> {
 public:
 
+//Avoid recomputing normalization
 vector<double> factor;
 vector<double> log_factor;
 
@@ -19,6 +20,7 @@ vector<double> log_factor;
 	gaussianHMM(){
 		this->setsize(0,2);
 		this->setIters(0,0);
+		this->type = "Gaussian";
 	}
 	
 	//Constructor
@@ -27,6 +29,14 @@ vector<double> log_factor;
 		this->setIters(min_,max_);
 		factor.resize(N_);
 		log_factor.resize(N_);
+		this->type = "Gaussian";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = ( 1 / (sigma_i sqrt(2 pi)) ) * exp( -(O - mu_i)^2/( 2 sigma_i^2) )\n";
+		cerr << "mu_i = B[i][0]\n";
+		cerr << "sigma_i = B[i][1]" << endl;
 	}
 	
 	void calc_factor(){
@@ -47,27 +57,7 @@ vector<double> log_factor;
 		calc_factor();
 	}
 	
-	void initB(vector<obs_type> &O){
-		
-		initB();
-		double av = 0;
-		int nm = O.size();
-		for(int t=0; t<O.size(); ++t){ av += O[t]; }
-		av /= nm; 
-		double sig = 0;
-		for(int t=0; t<O.size(); ++t){ sig += (O[t] - av)*(O[t] - av); }
-		sig = sqrt( sig / nm );
-
-		for(int i=0; i<this->N; ++i){
-			this->B[i][0] = av; 
-			this->B[i][1] = sig;
-		}
-		
-		this->calc_logB();
-		calc_factor();
-	}
-	
-	//Blows up for 0 observations
+	//Emission probability
 	inline double pB(int i, obs_type O){
 		return factor[i] * exp( -(O - this->B[i][0])*(O - this->B[i][0])/( 2*this->B[i][1]*this->B[i][1] ) );			  
 	}
@@ -97,8 +87,8 @@ vector<double> log_factor;
 	
 	void reestimate_log_B(vector<obs_type> &O){ 
 
-		if( !this->set_logO ){ this->calc_logO(O); }
-		if( this->no_logO ){ 
+		if( !this->set_logO ){ this->calc_logO(O); }	//try to precalculate log obs
+		if( this->no_logO ){ 							//negative observations, can't calculate log[ E[O] ] with lsum
 			for(int i=0; i<this->N; ++i){
 				for( int t=0; t<this->T; ++t){
 					this->gamma[i][t] = exp(  this->gamma[i][t] );
@@ -124,14 +114,14 @@ vector<double> log_factor;
 				this->B[i][1] -= this->sumgamma[i]; //log[ E[(O-mu)^2] ] 
 				this->B[i][1] = exp( 0.5*this->B[i][0] );
 				
-				
 			}}
 			this->calc_logB();
 			calc_factor();
-		
+			
 		}
 	}	
 	
+	//Emission probability
 	obs_type gen_obs(int state){
 		normal_distribution<double> b_dist(this->B[state][0], this->B[state][1]);
 		return b_dist(this->generator);

@@ -17,33 +17,33 @@ using namespace std;
 template <typename obs_type> class gammaHMM : public HMM<obs_type> {
 public:
 
-double solve_x_lo;
-double solve_x_hi;
-double solve_prec;
-
 vector<double> factor;
 vector<double> log_factor;
 
 	//Default
 	gammaHMM(){
-		solve_x_lo = 1e-10;
-		solve_x_hi = 10000;
-		solve_prec  =1e-5;
-
+		this->mlp.dim = 1;
+		this->mlp.x_start = {1e-10, 10000};
+		this->mlp.max_iter = 100;
+		
 		this->setsize(0,2);
 		this->setIters(0,0);
+		
+		this->type = "Gamma";
 	}
 	
 	//Constructor
 	gammaHMM(int N_, int min_, int max_){
-		solve_x_lo = 1e-10;
-		solve_x_hi = 10000;
-		solve_prec  =1e-5;
-		
+		this->mlp.dim = 1;
+		this->mlp.x_start = {1e-10, 10000};
+		this->mlp.max_iter = 100;
+
 		this->setsize(N_,2);
 		this->setIters(min_,max_);
 		factor.resize(N_);
 		log_factor.resize(N_);
+
+		this->type = "Gamma";
 	}
 	
 	void calc_factor(){
@@ -56,6 +56,14 @@ vector<double> log_factor;
 		}
 	}
 	
+	void info(){
+		cerr << this->type << " HMM" << endl;		
+		cerr << "prob( Emit O | state=i ) = ( beta_i^alpha_i / Gamma( alpha_i ) )   O^{alpha_i-1}   exp(-beta_i O)\n";
+		cerr << "alpha_i = B[i][0]\n";
+		cerr << "beta_i = B[i][1]\n";
+		cerr << "requires x > 0 strictly" << endl;
+	}
+	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 		for(int i=0; i<this->N; ++i){
@@ -64,40 +72,12 @@ vector<double> log_factor;
 		}
 		calc_factor();
 	}
-	/*
-	void initB(vector<obs_type> &O){
-		initB();
-		double av = 0;
-		double avl = 0;
-		int nm = 0;
-		for(int t=0; t<O.size(); ++t){
-			if(O[t] != 0){ av += O[t]; avl += log( O[t] ); ++nm; }
-		}
-		av /= nm; 
-		double lav = log( av );
-		avl /= nm;
 
-		cout << "here " << lav - avl << endl;
-		double alpha = gamma_solve( (lav - avl) , 0.1, 100, 1e-5);
-		double beta = av / alpha;
-		cout << alpha << " " << beta << endl;
-		for(int i=0; i<this->N; ++i){
-			this->B[i][1] = beta; 
-			this->B[i][0] = alpha;
-		}
-		
-		
-		calc_factor();
-		this->calc_logB();
-	}*/
-	
 	//Blows up for 0 observations
-	inline double pB(int i, obs_type O){
-	   
+	inline double pB(int i, obs_type O){	   
 		return factor[i] * exp( (this->B[i][0] - 1) * log(O) - this->B[i][1] * O );			  
 	}
 	inline double log_pB(int i, obs_type O){
-		
 		return log_factor[i] + (this->B[i][0] - 1) * log(O) - this->B[i][1] * O;
 	}
 	
@@ -122,7 +102,7 @@ vector<double> log_factor;
 			if( exlx != exlx ){
 				cerr << "nan probabilities try to fit with uselog = true" << endl; exit(1);
 			}
-			double alpha = gamma_solve( exlx , solve_x_lo, solve_x_hi, 100, solve_prec);
+			double alpha = gamma_solve( exlx , this->mlp); 
 
 			double beta = alpha / this->B[i][0] ;
 
@@ -150,11 +130,7 @@ vector<double> log_factor;
 			this->B[i][1]  /= exp( this->sumgamma[i] ); //E[ log[O] ] 			
 			
 			double exlx = ( this->B[i][0] - this->B[i][1] ); 
-			double alpha = gamma_solve( exlx , solve_x_lo, solve_x_hi, 100, solve_prec);
-			//double alpha = gamma_solve1( exlx , solve_x_lo, 100, solve_prec);
-
-			//cerr << alpha << " " << alpha1 << endl;
-
+			double alpha = gamma_solve( exlx , this->mlp); 
 			double beta = alpha / exp( this->B[i][0] ) ;
 			
 			this->B[i][0] = alpha;

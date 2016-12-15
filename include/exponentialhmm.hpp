@@ -11,19 +11,27 @@ using namespace std;
 template <typename obs_type> class exponentialHMM : public HMM<obs_type> {
 public:
 
-vector<double> lb;
 
 	//Default
 	exponentialHMM(){
 		this->setsize(0,1);
 		this->setIters(0,0);
+		this->type = "Exponential";
 	}
 	
 	//Constructor
 	exponentialHMM(int N_, int min_, int max_){
 		this->setsize(N_,1);
 		this->setIters(min_,max_);
-		lb = vector<double>(N_,0);
+		this->lb = vector<double>(N_,0);
+		this->type = "Exponential";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;		
+		cerr << "prob( Emit O | state=i ) = lambda_i exp( -lambda_i (O-lb_i) ) \n";
+		cerr << "lambda_i = B[i][0]\n";
+		cerr << "lb_i is fixed by user. Default is 0." << endl;
 	}
 	
 	void initB(){
@@ -35,7 +43,7 @@ vector<double> lb;
 		double av = 0;
 		int nm = 0;
 		for(int t=0; t<O.size(); ++t){
-			if(O[t] != 0){ av += O[t]-lb[0]; ++nm; }
+			if(O[t] != 0){ av += O[t]-this->lb[0]; ++nm; }
 		}
 		av /= nm;
 		for(int i=0; i<this->N; ++i){
@@ -46,10 +54,10 @@ vector<double> lb;
 
 	
 	inline double pB(int i, obs_type O){
-		return this->B[i][0] * exp( - this->B[i][0] * (O-lb[i]) );	
+		return this->B[i][0] * exp( - this->B[i][0] * (O-this->lb[i]) );	
 	}
 	inline double log_pB(int i, obs_type O){
-		return this->logB[i][0] + ( - this->B[i][0] * (O-lb[i]) );	
+		return this->logB[i][0] + ( - this->B[i][0] * (O-this->lb[i]) );	
 	}
 	
 	//re-estimate B from model
@@ -58,7 +66,7 @@ vector<double> lb;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 			this->B[i][0] = 0; 
 			for( int t=0; t<this->T; ++t){
-				this->B[i][0] += this->gamma[i][t] * (O[t]-lb[i]);
+				this->B[i][0] += this->gamma[i][t] * (O[t]-this->lb[i]);
 			}
 			this->B[i][0] = this->sumgamma[i]/this->B[i][0]; 
 		}}
@@ -81,9 +89,9 @@ vector<double> lb;
 			for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 				this->B[i][0] = 0;  
 				
-				this->B[i][0] = this->gamma[i][0] + log(O[0] - lb[i]); //+ this->logO[0];
+				this->B[i][0] = this->gamma[i][0] + log(O[0] - this->lb[i]); //+ this->logO[0];
 				for( int t=1; t<this->T; ++t){
-					lsum( this->B[i][0] , this->gamma[i][t] + log(O[t] - lb[i]) ); //this->logO[t] ); //E[O]
+					lsum( this->B[i][0] , this->gamma[i][t] + log(O[t] - this->lb[i]) ); //this->logO[t] ); //E[O]
 				} 
 
 				this->B[i][0] -= this->sumgamma[i]; //log[ E[O] ] 
@@ -96,7 +104,7 @@ vector<double> lb;
 
 	obs_type gen_obs(int state){
 		exponential_distribution<double> b_dist(this->B[state][0]);
-		return b_dist(this->generator) + lb[state];
+		return b_dist(this->generator) + this->lb[state];
 	}
 	
 	

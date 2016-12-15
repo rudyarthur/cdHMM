@@ -9,8 +9,8 @@
 #include <math.h>
 #include "gaussianhmm.hpp" 
 #include "exponentialhmm.hpp" 
-/*#include "poissonhmm.hpp" 
 #include "gammahmm.hpp" 
+/*#include "poissonhmm.hpp" 
 #include "lognormalhmm.hpp" 
 #include "discretehmm.hpp" 
 #include "laplacehmm.hpp" 
@@ -23,11 +23,56 @@
 
 using namespace std;
 
+template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A, vector<vector<double> > &B, vector<double> &pi){
+	int N = hmm->N;
+	int M = hmm->M;
+	cout << hmm->type << " check" << endl;
+	cout << "A fit :: A true" << endl;
+	double max = 0;
+	for(int i=0; i<N; ++i){
+		for(int j=0; j<N; ++j){
+			cout << hmm->A[i][j] << " ";
+			double diff = fabs(hmm->A[i][j] - A[i][j]);
+			if( diff > max ){ max = diff; }
+		} 
+		cout << "\t::\t";
+		for(int j=0; j<N; ++j){
+			cout << A[i][j] << " ";
+		} 
+		cout << "\n";
+	}
+	cout << "Max A diff = " << max << endl;
+	cout << "B fit :: B true" << endl;
+	max = 0;
+	for(int i=0; i<N; ++i){
+		for(int j=0; j<M; ++j){
+			cout << hmm->B[i][j] << " ";
+			double diff = fabs(hmm->B[i][j] - B[i][j]);
+			if( diff > max ){ max = diff; }
+		} 
+		cout << "\t::\t";
+		for(int j=0; j<M; ++j){
+			cout << B[i][j] << " ";
+		} 
+		cout << "\n";
+	}
+	cout << "Max B diff = " << max << endl;
+	cout << "pi fit :: pi true" << endl;
+	max = 0;
+	for(int i=0; i<N; ++i){
+			cout << hmm->pi[i] << "\t::\t" << pi[i] << "\n";
+			double diff = fabs(hmm->pi[i] - pi[i]);
+			if( diff > max ){ max = diff; }
+	} 
+	cout << "Max pi diff = " << max << endl;
+	
+}
+
 int main(int argc,char **argv){
 	
 	bool test_gaussian = true;
 	bool test_exponential = false;
-	bool test_gamma = false;
+	bool test_gamma = true;
 	bool test_poisson = false;
 	bool test_multinomial = false;
 	bool test_lognormal = false;
@@ -52,13 +97,15 @@ int main(int argc,char **argv){
 		A[0][0] = 0.9; A[0][1] = 0.1; 
 		A[1][0] = 0.1; A[1][1] = 0.9;
 
-		B[0][0] = 0.1; B[0][1] = 0.9;  
-		B[1][0] = 0.9; B[1][1] = 0.1; 
+		B[0][0] = 0.9; B[0][1] = 0.1;  
+		B[1][0] = 0.1; B[1][1] = 0.9; 
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 	
-		cout << "Gaussian Emission" << endl;
 		gaussianHMM<double> hmm(N,0,1000000); 
+		hmm.info();
+		
+		//Generate observation sequence with these paramters
 		hmm.init();
 		hmm.A = A; hmm.B = B; hmm.pi = pi;
 		
@@ -66,11 +113,11 @@ int main(int argc,char **argv){
 		vector<double> O(T);
 		hmm.generate_seq(O, T, false);
 		
+		//Fit that observation sequence
 		hmm.init();
 		hmm.fit(O, 1e-5);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
 	}
 	//Exponential emission
 	if( test_exponential ) {
@@ -90,12 +137,13 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		cout << "Exponential Emission" << endl;
-
 		exponentialHMM<double> hmm(N,0,1000000); 
+		hmm.info();
+
 		hmm.lb[0] = 5;
 		hmm.lb[1] = 5;
 		hmm.init();
+
 
 		hmm.A = A; hmm.B = B; hmm.pi = pi;
 		
@@ -105,12 +153,11 @@ int main(int argc,char **argv){
 		
 		hmm.init();
 		hmm.fit(O, 1e-10);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
 	}
 	//Gamma emission
-	/*if( test_gamma ) {
+	if( test_gamma ) {
 		
 		int N=2;
 		int M=2;
@@ -122,14 +169,14 @@ int main(int argc,char **argv){
 		A[0][0] = 0.9; A[0][1] = 0.1; 
 		A[1][0] = 0.1; A[1][1] = 0.9;
 		
-		B[0][0] = 0.5; B[0][1] = 1.0;  
-		B[1][0] = 4.5; B[1][1] = 1.5; 
+		B[0][0] = 4.5; B[0][1] = 1.5;  
+		B[1][0] = 0.5; B[1][1] = 1.0; 
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		cout << "Gamma Emission" << endl;
 
 		gammaHMM<double> hmm(N,0,1000000); 
+		hmm.info();
 		hmm.init();
 
 		hmm.A = A; hmm.B = B; hmm.pi = pi;
@@ -139,12 +186,12 @@ int main(int argc,char **argv){
 		hmm.generate_seq(O, T, false);
 		
 		hmm.init();
-		hmm.fit(O, true, 1e-5);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
+		hmm.fit(O, 1e-5);
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
+
 	}//Poisson emission
-	if( test_poisson ) {
+	/*if( test_poisson ) {
 		
 		int N=2;
 		int M=1;

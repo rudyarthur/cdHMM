@@ -4,15 +4,6 @@
 
 using namespace std;
 
-struct max_lhood_params {
-	
-	int dim;
-	vector<double> x_start;
-	double eps;
-	int max_iter;
-	
-};
-
 
 template <typename obs_type> class HMM{
 public:
@@ -32,6 +23,9 @@ public:
 	
 	default_random_engine generator;
 
+	//Type of emission model
+	string type;
+	
 	//Parameters
 	vector< vector<double> > A, B;
 	vector<double> pi;
@@ -61,9 +55,13 @@ public:
 	bool set_logO;
 	bool no_logO;
 	vector<double> logO;
-	
+
+	//Some distributions are bounded below
+	vector<double> lb;
+
 	//Some distributions need to get max likelihood parameters numerically
 	max_lhood_params mlp;
+	
 	
 	//Initialize Num states = N and num observations = M
 	void setsize(int N_, int M_){
@@ -78,7 +76,7 @@ public:
 		print_iter = false;
 		max_lhood = -numeric_limits<double>::infinity();
 	}
-	
+
 	virtual void initB() = 0;
 		
 	void calc_logA(){
@@ -147,7 +145,13 @@ public:
 		}
 		for(unsigned i=0; i<N; ++i){ pi[i] /= npi; }
 		initB();
-	
+			
+		//default optimisation parameters
+		mlp.dim=1;
+		mlp.x_start = {1e-10, 1e5};
+		mlp.eps=1e-5;
+		mlp.max_iter=100;
+
 		calc_logP();
 	}
 		
@@ -230,21 +234,23 @@ public:
 		setup( O.size() );
 	}
 	
+	//probability of emitting O in state i
 	virtual double pB(int i, obs_type O) = 0;
+	//log probability of emitting O in state i
 	virtual double log_pB(int i, obs_type O) = 0;	
 	
 	
-
+	///////////////////
+	//	FB algorthm  //
+	///////////////////
 	//Initial probability
 	inline void compute_alpha0(obs_type O){
 		c[0] = 0;
 		for(int i=0; i<N; ++i){
 			alpha[i][0] = pi[i] * pB(i,O); 
 			c[0] += alpha[i][0];
-			//cout << "alpha " << i << " " << 0 << " " << O << " " << alpha[i][0] << " " << pB(i,O) << endl; 
 		}
 		c[0] = 1.0/c[0];
-		//cout << "c " << 0 << " " << c[0] << endl; 
 		for(int i=0; i<N; ++i){ 
 			alpha[i][0] *= c[0]; 
 		}
@@ -258,11 +264,9 @@ public:
 				alpha[i][t] += alpha[j][t-1] * A[j][i]; 
 			}
 			alpha[i][t] *=  pB(i,O); 
-			//cout << "alpha " << i << " " << t << " " << O << " " << alpha[i][0] << " " << pB(i,O) << endl; 
 			sum += alpha[i][t];
 		}
 		c[t] = 1.0/sum;
-		//cout << "c " << t << " " << c[t] << endl; 
 		for(int i=0; i<N; ++i){ alpha[i][t] *= c[t]; }
 	}
 	//fill alpha from observation vector
@@ -297,7 +301,6 @@ public:
 				sdenl = 0;
 				for(int j=0; j<N; ++j){
 					digamma[i][j][t] = alpha[i][t] * A[i][j] * pB( j, O[t+1] ) * beta[j][ t+1 ];
-					//cout << "digamma " << i << " " << j << " " << t << " " << digamma[i][j][t] << endl;
 					gamma[i][t] += digamma[i][j][t];
 					sdenl += alpha[j][t] * A[j][i]; 
 				}
@@ -329,9 +332,9 @@ public:
 		}
 	}
 	
-	//////////////////
-	//	Log probs	//
-	//////////////////
+	//////////////////////////////////
+	//	FB algorithm (Log probs)	//
+	//////////////////////////////////
 	inline void compute_log_alpha0(obs_type O){
 		for(int i=0; i<N; ++i){
 			alpha[i][0] = logpi[i] + log_pB(i,O); 
@@ -347,7 +350,6 @@ public:
 				lsum(alpha[i][t], alpha[j][t-1] + logA[j][i]);
 			}
 			alpha[i][t] += log_pB(i,O); 
-			//cout << "alpha[" << i << "][" << t << "] = " << (alpha[i][t]) << endl; 
 		}
 	}
 
@@ -367,7 +369,6 @@ public:
 				for(int j=1; j<N; ++j){
 					lsum( beta[i][t-1] , (logA[i][j] + log_pB( j, O[t] ) + beta[j][t]) );
 				}
-				//cout << "beta[" << i << "][" << t << "] = " << (beta[i][t]) << endl;
 			}
 		}
 	}
@@ -399,10 +400,8 @@ public:
 			for(int i=0; i<N; ++i){
 				for(int j=0; j<N; ++j){ 
 					digamma[i][j][t] += sden; 
-					//cout << "digamma[" << i << "][" << j << "][" << t << "] = " << (digamma[i][j][t]) << endl;					
 				}
 				gamma[i][t] += sden;
-				//cout << "gamma[" << i << "][" << t << "] = " << (gamma[i][t]) << endl;
 			}
 	
 		}
@@ -411,8 +410,8 @@ public:
 			if(i==0){ sden = gamma[i][T-1]; } else { lsum(sden, gamma[i][T-1]); } 
 		}
 		sden *= -1.0;
-		for(int i=0; i<N; ++i){ gamma[i][ T-1] += sden; 
-				//cout << "gamma[" << i << "][" << T-1 << "] = " << exp(gamma[i][T-1]) << endl;
+		for(int i=0; i<N; ++i){ 
+			gamma[i][ T-1] += sden; 
 		}
 		
 	}
@@ -605,6 +604,7 @@ public:
 		set_state();
 	}
 	//Generate stats for O and states.
+	//TODO
 	void stats(vector<obs_type> &O, vector< vector<int> > &stats, vector<double> &duration_stats, bool viterbi = false){
 		
 		if(viterbi){
@@ -684,6 +684,7 @@ public:
 				ofile << pi[i] << " ";
 		} ofile << "\n";
 	}
+	//TODO print to stringstream
 	
 	//Fit HMM to obs seq O
 	vector<double> fit(vector<obs_type> &O, double eps, bool uselog=true){
@@ -704,13 +705,6 @@ public:
 				compute_log_beta(O); 
 				compute_log_gamma(O); 
 				
-				/*cout << "Iter " << iters << endl;
-				/*for(int t=0; t<T; ++t){
-				for(int i=0; i<N; ++i){
-					cout << t << " " << i << " " << (alpha[i][t]) << " " << (beta[i][t]) << " " << (gamma[i][t]) << " " << O[t]
-					<< endl;
-				}}*/ //exit(1);
-				
 				//re-estimate	
 				tmpA = A;
 				tmpB = B;
@@ -719,14 +713,8 @@ public:
 				compute_log_sumgamma();
 				reestimate_log(O);
 				
-				//cout << "A = "; printA(); 
-				//printpi();
-				//cout << "B = "; printB(); //exit(1);
-
 				evaluate_log();
 				
-				//cout << "lhood " << lhood << endl; //exit(1);
-
 			} else {
 
 				compute_alpha(O); 
@@ -738,28 +726,16 @@ public:
 				tmpB = B;
 				tmppi = pi;
 			
-				compute_sumgamma();
-				
-				/*cout << "Iter " << iters << endl;
-				for(int t=0; t<T; ++t){
-				for(int i=0; i<N; ++i){
-					cout << t << " " << i << " " << (alpha[i][t]) << " " << (beta[i][t]) << " " << (gamma[i][t]) << 
-					" " << (c[t]) << " " << (sumgamma[i]) << endl;
-				}} exit(1);*/
-				
+				compute_sumgamma();				
 				reestimate(O);
-				
-				//printA(); printB(); printpi(); exit(1);
-				
+								
 				evaluate();
-				
-				//cout << "lhood " << lhood << endl; exit(1);
-				
+								
 			}
 			
 			++iters;
 		    if( print_iter ){ 
-				cerr << "Iter " << iters << " " << lhood << " " << fabs(lhood - old_lP) << endl; 
+				cerr << "Iter: " << iters << " Lhood: " << lhood << endl; 
 			}
 		
 			if(lhood > max_lhood){
@@ -768,11 +744,10 @@ public:
 				maxB = B;
 				maxpi = pi;
 			}
-			//if(old_lP > lhood){	cerr << "Likelihood increased at iteration " << iters << endl;  }
 
-			double dA = -1;
-			double dB = -1;
-			double dpi = -1; 
+			double dA = -1;	//max change in A matrix
+			double dB = -1; //max change in B matrix
+			double dpi = -1;  //max change in pi matrix
 			for(unsigned i=0; i<N; ++i){ 
 				for(unsigned j=0; j<N; ++j){ 
 					double diff = fabs(A[i][j] - tmpA[i][j]);
@@ -786,12 +761,12 @@ public:
 				if( diff > dpi){ dpi = diff; }
 			}
 						
-			if( iters < minIters ){
+			if( iters < minIters ){	//at least minIters done
 				old_lP = lhood;
 			} else if( 
-			iters < maxIters && 
-			fabs(lhood - old_lP) > eps && 
-			(dA > eps || dB > eps || dpi > eps ) 
+			iters < maxIters && //at most maxIters
+			fabs(lhood - old_lP) > eps && //lhood change
+			(dA > eps || dB > eps || dpi > eps ) //param change
 			){
 				old_lP = lhood;
 			} else {
@@ -808,6 +783,9 @@ public:
 		return ret;
 	}
 	
+	///////////////////////////////
+	//  Use HMM to generate seq  //
+	///////////////////////////////
 	//Initial state
 	discrete_distribution<int> setup_distpi(){
 		discrete_distribution<int> pi_dist(pi.begin(), pi.end());
@@ -858,4 +836,5 @@ public:
 template class HMM<double>;
 template class HMM<float>;
 template class HMM<int>;
+//template class HMM<char>; //TODO
 

@@ -21,6 +21,15 @@ using namespace std;
 
 #define EULER_MASCHERONI 0.57721566490153286060651209008240243104215933593992
 
+struct max_lhood_params {
+	
+	int dim;
+	vector<double> x_start;
+	double eps;
+	int max_iter;
+	
+};
+
 template<typename S, typename T> bool pair_sort_first (pair<S,T> i, pair<S,T> j) { return (i.first>j.first); }
 template<typename S, typename T> bool pair_sort_second (pair<S,T> i, pair<S,T> j) { return (i.second>j.second); }
 
@@ -58,6 +67,10 @@ void ldiff(double &a, double b){
 	}
 }
 
+/* v is a vector of positive and negative values
+ * safe log sum returns
+ *  ( sign(sum(v))   ,    | log( | sum(v, v>0) - sum(v, v<0) | ) | )
+ * */
 pair<int, double> safe_log_sum(vector<double> &v){
 	int t = 0;
     double pos = (v[t] >= 0) ? log( v[t] ) : -numeric_limits<double>::infinity(); //log v
@@ -82,6 +95,11 @@ pair<int, double> safe_log_sum(vector<double> &v){
     return make_pair(1,0); 
 }
 
+/* v is a vector of positive and negative values
+ * add is a vector of ( log(a0), log(a1), ... ) := log(a)
+ * safe log sum returns
+ *  ( sign(sum(v))   ,    | log( | sum(ai*vi, v>0) - sum(ai*vi, v<0) | ) | )
+ * */
 pair<int, double> safe_log_sum(vector<double> &v, vector<double> &add){
 	int t = 0;
     double pos = (v[t] >= 0) ? add[t] + log( v[t] ) : -numeric_limits<double>::infinity(); //log v

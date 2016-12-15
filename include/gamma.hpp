@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>       
+#include "utils.hpp"
 #include "optimise/function.hpp"
 #include "optimise/brent.hpp"
 #include "optimise/psi.hpp"
@@ -25,12 +26,11 @@ public:
 
 };
 
-double gamma_solve(double pm, double start, double end, int max_iter, double eps){
+double gamma_solve(double pm, max_lhood_params mlp){ 
 	
 	vector<double> p = {pm};
 	PsiGamma my_f(p);
 	
-	vector<double> range = {start, end};
-	return brent(range, max_iter, eps, my_f);
+	return brent(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
 	
 }
