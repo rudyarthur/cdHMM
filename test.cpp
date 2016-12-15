@@ -1,24 +1,32 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <map>
 #include <fstream>
 #include <sstream>
 #include <iterator>
 #include <string>
+#include <locale>         
 #include <limits>
 #include <math.h>
+#include <getopt.h>
 #include "gaussianhmm.hpp" 
 #include "exponentialhmm.hpp" 
 #include "gammahmm.hpp" 
-/*#include "poissonhmm.hpp" 
 #include "lognormalhmm.hpp" 
+#include "paretohmm.hpp"
+
+/*
 #include "discretehmm.hpp" 
+#include "poissonhmm.hpp" 
+
 #include "laplacehmm.hpp" 
-#include "jointhmm.hpp" 
+
 #include "gumbelhmm.hpp" 
 #include "weibullhmm.hpp" 
 #include "extremevaluehmm.hpp" 
-#include "paretohmm.hpp" 
+ 
+#include "jointhmm.hpp" //drop
 #include "multihmm.hpp" */
 
 using namespace std;
@@ -68,24 +76,57 @@ template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A,
 	
 }
 
+void usage(){
+	cerr << "usage:\n";
+	cerr << "./test -t type\n";
+	cerr << 
+"type = gaussian, exponential, gamma,\n\
+       lognormal\n";
+	cerr << "./test -t all\n";
+	cerr << "./test" << endl;
+	exit(1);
+}
+
 int main(int argc,char **argv){
 	
-	bool test_gaussian = true;
+	int c;
+	static struct option loptions[] =    {
+        {"test",1,0,'t'},
+        {0,0,0,0}
+    };
+	
+	string test_string = "all";
+	
+    while ((c = getopt_long(argc, argv, "t:",loptions,NULL)) >= 0) {  
+        switch (c)
+        {
+        case 't': test_string = (optarg); break;
+        case '?': usage();
+        default: 
+			test_string = "all";
+        }
+    }
+
+	transform(test_string.begin(), test_string.end(), test_string.begin(), ::tolower);    
+    bool doall = (test_string == "all") ? true : false;
+
+	bool test_gaussian = false;
 	bool test_exponential = false;
-	bool test_gamma = true;
-	bool test_poisson = false;
+	bool test_gamma = false;
+	bool test_lognormal = true;
+
+	/*bool test_poisson = false;
 	bool test_multinomial = false;
-	bool test_lognormal = false;
 	bool test_joint = false;
 	bool test_laplace = false;
 	bool test_gumbel = false;
 	bool test_weibull = false;
 	bool test_extremevalue = true;
 	bool test_pareto = false;
-	bool test_multi = false;
+	bool test_multi = false;*/
 	
 	//Gaussian emission
-	if( test_gaussian ) {
+	if( doall || test_string == "gaussian") {
 		
 		int N=2;
 		int M=2;
@@ -120,7 +161,7 @@ int main(int argc,char **argv){
 		output_check<double>(&hmm, A, B, pi);
 	}
 	//Exponential emission
-	if( test_exponential ) {
+	if( doall || test_string == "exponential") {
 		
 		int N=2;
 		int M=1;
@@ -132,8 +173,8 @@ int main(int argc,char **argv){
 		A[0][0] = 0.9; A[0][1] = 0.1; 
 		A[1][0] = 0.1; A[1][1] = 0.9;
 
-		B[0][0] = 0.1;
-		B[1][0] = 0.9;  
+		B[0][0] = 0.9;
+		B[1][0] = 0.1;  
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
@@ -144,20 +185,19 @@ int main(int argc,char **argv){
 		hmm.lb[1] = 5;
 		hmm.init();
 
-
 		hmm.A = A; hmm.B = B; hmm.pi = pi;
 		
 		int T = 10000;
 		vector<double> O(T);
 		hmm.generate_seq(O, T, false);
-		
+
 		hmm.init();
 		hmm.fit(O, 1e-10);
 		hmm.sortparams();
 		output_check<double>(&hmm, A, B, pi);
 	}
 	//Gamma emission
-	if( test_gamma ) {
+	if( doall || test_string == "gamma") {
 		
 		int N=2;
 		int M=2;
@@ -190,7 +230,42 @@ int main(int argc,char **argv){
 		hmm.sortparams();
 		output_check<double>(&hmm, A, B, pi);
 
-	}//Poisson emission
+	}
+	//Log Normal
+	if( doall || test_string == "lognormal") {
+		
+		int N=2;
+		int M=2;
+		
+		vector<vector<double> > A(N, vector<double>(N));
+		vector<vector<double> > B(N, vector<double>(M));
+		vector<double> pi(N);
+		
+		A[0][0] = 0.9; A[0][1] = 0.1; 
+		A[1][0] = 0.1; A[1][1] = 0.9;
+
+		B[0][0] = 10; B[0][1] = 0.1;
+		B[1][0] = 0; B[1][1] = 0.1; 
+		
+		pi[0] = 0.6; pi[1] = 0.4;
+		
+		lognormalHMM<double> hmm(N,0,1000000); 
+		hmm.info();
+		hmm.init();
+
+		hmm.A = A; hmm.B = B; hmm.pi = pi;
+		
+		int T = 10000;
+		vector<double> O(T);
+		hmm.generate_seq(O, T, false);
+		
+		hmm.init();
+		hmm.fit(O, 1e-5);
+		hmm.sortparams();
+		output_check<double>(&hmm, A, B, pi);
+		
+	}
+	//Poisson emission
 	/*if( test_poisson ) {
 		
 		int N=2;
@@ -258,47 +333,6 @@ int main(int argc,char **argv){
 		
 		int T = 10000;
 		vector<int> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, false, 1e-10);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
-		
-		hmm.init();
-		hmm.fit(O, true, 1e-10);
-		cout << "A = "; hmm.printA();
-		cout << "B = "; hmm.printB();
-		cout << "pi = "; hmm.printpi();
-	}
-	//Log Normal
-	if( test_lognormal ) {
-		
-		int N=2;
-		int M=2;
-		
-		vector<vector<double> > A(N, vector<double>(N));
-		vector<vector<double> > B(N, vector<double>(M));
-		vector<double> pi(N);
-		
-		A[0][0] = 0.9; A[0][1] = 0.1; 
-		A[1][0] = 0.1; A[1][1] = 0.9;
-
-		B[0][0] = 0; B[0][1] = 0.1;
-		B[1][0] = 10; B[1][1] = 0.1; 
-		
-		pi[0] = 0.6; pi[1] = 0.4;
-		
-		cout << "Lognormal Emission" << endl;
-
-		lognormalHMM<double> hmm(N,0,1000000); 
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<double> O(T);
 		hmm.generate_seq(O, T, false);
 		
 		hmm.init();

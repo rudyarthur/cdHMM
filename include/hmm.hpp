@@ -127,6 +127,7 @@ public:
 		
 		set_logO = false;
 		no_logO = false;
+		logO.resize(0);
 		
 		A = vector< vector<double> >( N, vector<double>(N, 1 ) );
 		pi = vector<double>(N, 1);
@@ -145,6 +146,9 @@ public:
 		}
 		for(unsigned i=0; i<N; ++i){ pi[i] /= npi; }
 		initB();
+		
+		lhood = -numeric_limits<double>::infinity();
+		//don't zero maxA, maxB, ... , to retain between multiple restarts
 			
 		//default optimisation parameters
 		mlp.dim=1;

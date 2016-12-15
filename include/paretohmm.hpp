@@ -18,6 +18,8 @@ vector<double> lb;
 	paretoHMM(){
 		this->setsize(0,1);
 		this->setIters(0,0);
+		
+		this->type = "Pareto";
 	}
 	
 	//Constructor
@@ -25,6 +27,8 @@ vector<double> lb;
 		this->setsize(N_,1);
 		this->setIters(min_,max_);
 		lb = vector<double>(N_,0);
+		
+		this->type = "Pareto";
 	}
 	
 	void initB(){
@@ -34,21 +38,6 @@ vector<double> lb;
 		}
 	}
 	
-	void initB(vector<obs_type> &O){
-		this->initB();
-		double av = 0;
-		double min = O[0];
-		for(int t=0; t<O.size(); ++t){
-			if(O[t] < min){ min = O[t]; }
-		}
-		for(int t=0; t<O.size(); ++t){
-			av += log(O[t]) - log(min);
-		}
-		for(int i=0; i<this->N; ++i){
-			this->B[i][0] = O.size()/av;	
-		}		
-	}
-
 	
 	inline double pB(int i, obs_type O){
 		return (O < lb[i]) ? 0 : this->B[i][0] * pow( lb[i], this->B[i][0] ) / pow( O, this->B[i][0] + 1 );	
@@ -60,6 +49,11 @@ vector<double> lb;
 	//re-estimate B from model
 	void reestimate_B(vector<obs_type> &O){ 
 
+		if( !this->set_logO){ this->calc_logO(O); }
+		if( this->no_logO ){ 
+			cerr << "Pareto requires O > 0" << endl; exit(1); 
+		}
+		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 
 			double av = 0;

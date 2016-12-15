@@ -19,6 +19,8 @@ vector<double> log_factor;
 	lognormalHMM(){
 		this->setsize(0,2);
 		this->setIters(0,0);
+		
+		this->type = "Log-normal";
 	}
 	
 	//Constructor
@@ -27,6 +29,15 @@ vector<double> log_factor;
 		this->setIters(min_,max_);
 		factor.resize(N_);
 		log_factor.resize(N_);
+		
+		this->type = "Log-normal";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = ( 1 / (sigma_i sqrt(2 pi)) ) * exp( -( ln(O) - mu_i)^2/( 2 sigma_i^2) )\n";
+		cerr << "mu_i = B[i][0]\n";
+		cerr << "sigma_i = B[i][1]" << endl;
 	}
 	
 	void calc_factor(){
@@ -46,26 +57,7 @@ vector<double> log_factor;
 		}
 		calc_factor();
 	}
-	
-	void initB(vector<obs_type> &O){
-		
-		initB();
-		double av = 0;
-		int nm = O.size();
-		for(int t=0; t<O.size(); ++t){ av += O[t]; }
-		av /= nm; 
-		double sig = 0;
-		for(int t=0; t<O.size(); ++t){ sig += (O[t] - av)*(O[t] - av); }
-		sig = sqrt( sig / nm );
 
-		for(int i=0; i<this->N; ++i){
-			this->B[i][0] = av; 
-			this->B[i][1] = sig;
-		}
-		
-		this->calc_logB();
-		calc_factor();
-	}
 	
 	//Blows up for 0 observations
 	inline double pB(int i, obs_type O){
@@ -80,7 +72,7 @@ vector<double> log_factor;
 		
 		if( !this->set_logO){ this->calc_logO(O); }
 		if( this->no_logO ){ 
-			cerr << "Log Normal function requires O > 0" << endl; exit(1); 
+			cerr << "Log Normal requires O > 0" << endl; exit(1); 
 		}
 		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
@@ -88,11 +80,11 @@ vector<double> log_factor;
 			this->B[i][1] = 0;
 			
 			for( int t=0; t<this->T; ++t){
-				this->B[i][0] += this->gamma[i][t] * log( O[t] ); //E[O]
+				this->B[i][0] += this->gamma[i][t] * this->logO[t]; //E[O]
 			}
 			this->B[i][0] /= this->sumgamma[i]; //E[O] = mu
 			for( int t=0; t<this->T; ++t){
-				this->B[i][1] += this->gamma[i][t] * ( log( O[t] ) - this->B[i][0] )*( log( O[t] ) - this->B[i][0] ); //E[ (O-mu)^2 ]
+				this->B[i][1] += this->gamma[i][t] * ( this->logO[t] - this->B[i][0] )*( this->logO[t] - this->B[i][0] ); //E[ (O-mu)^2 ]
 			}
 			this->B[i][1] = sqrt(this->B[i][1] / this->sumgamma[i]); //sigma = sqrt( E[ (O-mu)^2 ] )
 		}}
