@@ -63,7 +63,7 @@ public:
 	max_lhood_params mlp;
 	
 	//So generic HMM has a setB method without needing to reimplement it in ecery realization
-	void setB(vector<vector<double> > &inB){ B = inB; }
+	virtual void setB(vector<vector<double> > &inB){ B = inB; }
 
 	//Initialize Num states = N and num observations = M
 	void setsize(int N_, int M_){
@@ -175,23 +175,24 @@ public:
 	}
 	
 	//re-order states according to no_obs.second
-	void sortparams( vector< pair<double, int> > &no_obs ){
+	void sortparams( vector< pair<double, int> > &no_obs, 
+	vector<vector<double> > &fA, vector<vector<double> > &fB, vector<double> &fpi ){
 		
 		vector< vector<double> > At(N, vector<double>(N) );
 		vector< vector<double> > Bt(N, vector<double>(M) );
 		vector<double> pit(N);
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<N; ++j){
-				At[i][j] = A[no_obs[i].second][no_obs[j].second];
+				At[i][j] = fA[no_obs[i].second][no_obs[j].second];
 			} 
 			for(int j=0; j<M; ++j){
-				Bt[i][j] = B[no_obs[i].second][j];
+				Bt[i][j] = fB[no_obs[i].second][j];
 			} 
-			pit[i] = pi[no_obs[i].second];
+			pit[i] = fpi[no_obs[i].second];
 		}
-		A = At;
-		B = Bt;
-		pi = pit;
+		fA = At;
+		fB = Bt;
+		fpi = pit;
 	}
 	
 	//re-order states so B[0][0] > B[1][0] > B[2][0] > ...
@@ -203,8 +204,16 @@ public:
 				no_obs[i].second = i;
 		}
 		sort(no_obs.begin(), no_obs.end(), pair_sort_first<double, int>);
-		sortparams(no_obs);
-		
+		sortparams(no_obs, A, B, pi);
+
+		if( maxB.size() == N ){
+			for(int i=0; i<N; ++i){ 
+					no_obs[i].first = maxB[i][0];
+					no_obs[i].second = i;
+			}
+			sort(no_obs.begin(), no_obs.end(), pair_sort_first<double, int>);
+			sortparams(no_obs, maxA, maxB, maxpi);
+		}
 	}
 
 	
@@ -843,5 +852,5 @@ public:
 template class HMM<double>;
 template class HMM<float>;
 template class HMM<int>;
-//template class HMM<char>; //TODO
+template class HMM<char>; 
 

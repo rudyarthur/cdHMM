@@ -20,8 +20,10 @@ profile: CFLAGS =  -pg -O3 -std=c++11
 profile: all
 
 test: test.cpp 
-	$(CXX) $(CXXFLAGS) -o test test.cpp $(IFLAGS)
+	#$(CXX) $(CXXFLAGS) -o test test.cpp $(IFLAGS)
+	$(CXX) $(CXXFLAGS) -o text_analysis text_analysis.cpp $(IFLAGS)
 clean:
 	rm test 
+	rm text_analysis
 
 

@@ -17,6 +17,8 @@ bool setup;
 	multiHMM(){
 		this->setsize(0,0);
 		this->setIters(0,0);
+		
+		this->type = "multi";
 	}
 	
 	//Constructor
@@ -31,6 +33,7 @@ bool setup;
 		this->setsize(this->N,this->M);
 		this->setIters(min_,max_);
 		setup = false;
+		this->type = "multi";
 	}
 	
 	void info(){
@@ -43,7 +46,9 @@ bool setup;
 			ct += hmm[i]->N;
 		}
 	}
-		
+	
+
+	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 0) );
 		for(int i=0; i<hmm.size(); ++i){ hmm[i]->init(); }
@@ -62,6 +67,28 @@ bool setup;
 			add += hmm[h]->N;
 		}
 		
+	}
+	void getB(){
+		
+		if(this->maxB.size() != this->N){ this->maxB = vector< vector<double> >( this->N, vector<double>(this->M, 0) ); }
+
+		double add = 0;
+		for(int h=0; h<hmm.size(); ++h){
+			for(int i=0; i<hmm[h]->N; ++i){
+				for(int j=0; j<hmm[h]->M; ++j){
+					this->B[i+add][j] = hmm[h]->B[i][j];
+					this->maxB[i+add][j] = hmm[h]->maxB[i][j];
+				}
+			}
+			add += hmm[h]->N;
+		}
+		
+	}
+	void sort_params(){
+		for(int i=0; i<hmm.size(); ++i){
+			hmm[i]->sort_params();
+		}
+		getB();
 	}
 	
 	inline double pB(int i, obs_type O){

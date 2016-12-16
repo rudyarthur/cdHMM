@@ -28,13 +28,13 @@ using namespace std;
 template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A, vector<vector<double> > &B, vector<double> &pi){
 	int N = hmm->N;
 	int M = hmm->M;
-	cout << hmm->type << " check" << endl;
+	cout << hmm->type << " check" << fixed << endl;
 	cout << "A fit :: A true" << endl;
 	double max = 0;
 	for(int i=0; i<N; ++i){
 		for(int j=0; j<N; ++j){
-			cout << hmm->A[i][j] << " ";
-			double diff = fabs(hmm->A[i][j] - A[i][j]);
+			cout << hmm->maxA[i][j] << " ";
+			double diff = fabs(hmm->maxA[i][j] - A[i][j]);
 			if( diff > max ){ max = diff; }
 		} 
 		cout << "\t::\t";
@@ -48,8 +48,8 @@ template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A,
 	max = 0;
 	for(int i=0; i<N; ++i){
 		for(int j=0; j<M; ++j){
-			cout << hmm->B[i][j] << " ";
-			double diff = fabs(hmm->B[i][j] - B[i][j]);
+			cout << hmm->maxB[i][j] << " ";
+			double diff = fabs(hmm->maxB[i][j] - B[i][j]);
 			if( diff > max ){ max = diff; }
 		} 
 		cout << "\t::\t";
@@ -62,8 +62,8 @@ template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A,
 	cout << "pi fit :: pi true" << endl;
 	max = 0;
 	for(int i=0; i<N; ++i){
-			cout << hmm->pi[i] << "\t::\t" << pi[i] << "\n";
-			double diff = fabs(hmm->pi[i] - pi[i]);
+			cout << hmm->maxpi[i] << "\t::\t" << pi[i] << "\n";
+			double diff = fabs(hmm->maxpi[i] - pi[i]);
 			if( diff > max ){ max = diff; }
 	} 
 	cout << "Max pi diff = " << max << endl;
@@ -78,10 +78,42 @@ void usage(){
 "type = gaussian, exponential, gamma,\n\
        lognormal, pareto, laplace,\n\
        discrete, poisson,\n\
-       gumbel\n";
+       gumbel, weibull, extremevalue,\n\
+       multi.\n";
 	cerr << "./test -t all\n";
-	cerr << "./test" << endl;
 	exit(1);
+}
+
+template <typename T> void run_hmm(HMM<T> *hmm, vector<vector<double> > &A, 
+vector<vector<double> > &B, vector<double> &pi, 
+int num_obs, double eps, int num_restarts){
+	
+	//Print basic info
+	hmm->info();
+
+	//Generate observation sequence with these paramters
+	hmm->init();
+
+	hmm->A = A;
+	hmm->pi = pi; 
+	hmm->setB( B ); 
+
+	vector<T> O(num_obs);
+	hmm->generate_seq(O, num_obs, false);
+
+	
+	//Fit that observation sequence
+	cerr << "Running";
+	for(int i=0; i<num_restarts; ++i){
+		cerr << ".";
+		hmm->init();
+		hmm->fit(O, eps);
+		hmm->sortparams();
+	}
+	cerr << endl;
+	
+	output_check<T>(hmm, A, B, pi);
+
 }
 
 int main(int argc,char **argv){
@@ -92,7 +124,7 @@ int main(int argc,char **argv){
         {0,0,0,0}
     };
 	
-	string test_string = "all";
+	string test_string = "none";
 	
     while ((c = getopt_long(argc, argv, "t:",loptions,NULL)) >= 0) {  
         switch (c)
@@ -100,13 +132,15 @@ int main(int argc,char **argv){
         case 't': test_string = (optarg); break;
         case '?': usage();
         default: 
-			test_string = "all";
+			usage();
         }
     }
+    if( test_string == "none" ){ usage(); }
 
 	transform(test_string.begin(), test_string.end(), test_string.begin(), ::tolower);    
     bool doall = (test_string == "all") ? true : false;
 	
+	int hmm_max_iters = 1000;
 	//Gaussian emission
 	if( doall || test_string == "gaussian") {
 		
@@ -125,22 +159,9 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 	
-		gaussianHMM<double> hmm(N,0,1000000); 
-		hmm.info();
+		gaussianHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 		
-		//Generate observation sequence with these paramters
-		hmm.init();
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		//Fit that observation sequence
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
 	}
 	//Exponential emission
 	if( doall || test_string == "exponential") {
@@ -160,23 +181,10 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		exponentialHMM<double> hmm(N,0,1000000); 
-		hmm.info();
+		exponentialHMM<double> hmm(N,0,hmm_max_iters);
+		hmm.lb[0] = 5; hmm.lb[1] = 5; 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
-		hmm.lb[0] = 5;
-		hmm.lb[1] = 5;
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-
-		hmm.init();
-		hmm.fit(O, 1e-10);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
 	}
 	//Gamma emission
 	if( doall || test_string == "gamma") {
@@ -197,20 +205,8 @@ int main(int argc,char **argv){
 		pi[0] = 0.6; pi[1] = 0.4;
 		
 
-		gammaHMM<double> hmm(N,0,1000000); 
-		hmm.info();
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
+		gammaHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
 	}
 	//Log Normal
@@ -231,20 +227,9 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		lognormalHMM<double> hmm(N,0,1000000); 
-		hmm.info();
-		hmm.init();
+		lognormalHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
 		
 	}//Pareto
 	if( doall || test_string == "pareto") {
@@ -264,22 +249,11 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		paretoHMM<double> hmm(N,0,1000000);
-		hmm.info(); 
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		hmm.lb[0] = 1;
-		hmm.lb[1] = 1;
-			
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
+		paretoHMM<double> hmm(N,0,hmm_max_iters);
+		cerr << "lower bound!" << endl; hmm.lb[0] = 1; hmm.lb[1] = 1;
 		
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
+
 		
 	}
 	//Laplace
@@ -300,29 +274,16 @@ int main(int argc,char **argv){
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		laplaceHMM<double> hmm(N,0,1000000); 
-		hmm.info(); 
-		hmm.init();
+		laplaceHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		srand(1234567);
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-10);
-		hmm.sortparams();
-		output_check<double>(&hmm, A, B, pi);
 		
 	}
 	//Categorical
 	if( doall || test_string == "discrete") {
 		
 		int N=2;
-		int M=3;
+		int M=2;
 		
 		vector<vector<double> > A(N, vector<double>(N));
 		vector<vector<double> > B(N, vector<double>(M));
@@ -331,25 +292,14 @@ int main(int argc,char **argv){
 		A[0][0] = 0.9; A[0][1] = 0.1; 
 		A[1][0] = 0.1; A[1][1] = 0.9;
 
-		B[0][0] = 0.8; B[0][1] = 0.0; B[0][2] = 0.2;
-		B[1][0] = 0.1; B[1][1] = 0.4; B[1][2] = 0.5;
+		B[0][0] = 0.8; B[0][1] = 0.2; 
+		B[1][0] = 0.4; B[1][1] = 0.6; 
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		multinomialHMM<int> hmm(N,M,0,1000000); 
-		hmm.info(); 
-		hmm.init();
+		multinomialHMM<int> hmm(N,M,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-2, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 20000;
-		vector<int> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 	}
 	//Poisson emission
 	if( doall || test_string == "poisson") {
@@ -370,20 +320,9 @@ int main(int argc,char **argv){
 		pi[0] = 0.6; pi[1] = 0.4;
 		
 
-		poissonHMM<int> hmm(N,0,1000000); 
-		hmm.info(); 
-		hmm.init();
+		poissonHMM<int> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		int T = 10000;
-		vector<int> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-10);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 	} 
 	//Gumbel
 	if( doall || test_string == "gumbel") {
@@ -404,22 +343,9 @@ int main(int argc,char **argv){
 		pi[0] = 0.6; pi[1] = 0.4;
 		
 
-		gumbelHMM<double> hmm(N,0,1000000); 
-		hmm.info(); 
-		hmm.init();
+		gumbelHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-		
-		srand(123456789);
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-10);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 			
 	}
 	//Weibull
@@ -440,22 +366,9 @@ int main(int argc,char **argv){
 
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		weibullHMM<double> hmm(N,0,1000000); 
-		hmm.info(); 
-		hmm.init();
+		weibullHMM<double> hmm(N,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-2, 10);
 
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-				
-		srand(123456789);
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 			
 	}
 	//Extreme value
@@ -479,24 +392,9 @@ int main(int argc,char **argv){
 		//pi[0] = 1;
 		pi[0] = 0.6; pi[1] = 0.4;
 
+		extremevalueHMM<double> hmm(N,0,hmm_max_iters); 		
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-2, 10);
 
-		extremevalueHMM<double> hmm(N,0,1000000); 		
-		hmm.info(); 
-		hmm.init();
-
-		hmm.A = A; hmm.B = B; hmm.pi = pi;
-					
-		srand(123456789);
-		
-		int T = 10000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-          
-		hmm.init();
-		hmm.print_iter = true;
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 			
 	}
 	//multi emission
@@ -509,9 +407,6 @@ int main(int argc,char **argv){
 		vector<vector<double> > B(N, vector<double>(M));
 		vector<double> pi(N);
 		
-		//A[0][0] = 0.9; A[0][1] = 0.1; 
-		//A[1][0] = 0.1; A[1][1] = 0.9;
-		
 		A[0][0] = 0.9;  A[0][1] = 0.05;  A[0][2] = 0.05; 
 		A[1][0] = 0.05; A[1][1] = 0.9;   A[1][2] = 0.05; 
 		A[2][0] = 0.05; A[2][1] = 0.05;  A[2][2] = 0.9; 
@@ -520,41 +415,28 @@ int main(int argc,char **argv){
 		B[1][0] = 5; B[1][1] = 1;  
 		B[2][0] = 3; B[2][1] = 0.1;  
 
-		//pi[0] = 0.6; pi[1] = 0.4;
+
 		pi[0] = 0.6; pi[1] = 0.2; pi[2] = 0.2;
 
 		
 		vector<vector<double> > Bexp(1, vector<double>(1));
-		Bexp[0][0] = 100;  
+		//Bexp[0][0] = B[0][0];  
 		vector<vector<double> > Blognorm(1, vector<double>(2));
-		Blognorm[0][0] = 5; Blognorm[0][1] = 1; 
+		//Blognorm[0][0] = B[1][0]; Blognorm[0][1] = B[1][1]; 
 		vector<vector<double> > Bnorm(1, vector<double>(2));
-		Bnorm[0][0] = 3; Bnorm[0][1] = 0.1; 
+		//Bnorm[0][0] = B[2][0]; Bnorm[0][1] = B[2][1]; 
 
 			
 	
-		exponentialHMM<double> hmm_exp(1,0,1000000); hmm_exp.B = Bexp;
-		gaussianHMM<double> hmm_norm(1,0,1000000); hmm_norm.B = Bnorm;
-		lognormalHMM<double> hmm_lognorm(1,0,1000000); hmm_lognorm.B = Blognorm;
-		//vector< HMM<double>* > hmms = { &hmm_exp };
-		//vector< HMM<double>* > hmms = { &hmm_exp, &hmm_norm };
+		exponentialHMM<double> hmm_exp(1,0,hmm_max_iters); hmm_exp.B = Bexp;
+		lognormalHMM<double> hmm_lognorm(1,0,hmm_max_iters); hmm_lognorm.B = Blognorm;
+		gaussianHMM<double> hmm_norm(1,0,hmm_max_iters); hmm_norm.B = Bnorm;
 		vector< HMM<double>* > hmms = { &hmm_exp, &hmm_lognorm, &hmm_norm };
 		
-		multiHMM<double> hmm(hmms,0,1000000); 
-		hmm.init();
-		hmm.info();
-		hmm.A = A; hmm.pi = pi; hmm.setB(B);
+		multiHMM<double> hmm(hmms,0,hmm_max_iters);
+		run_hmm(&hmm,  A, B, pi, 30000, 1e-5, 10);
 
 
-		int T = 30000;
-		vector<double> O(T);
-		hmm.generate_seq(O, T, false);
-		
-		hmm.init();
-		hmm.print_iter = true;
-		hmm.fit(O, 1e-5);
-		hmm.sortparams();
-		output_check(&hmm, A, B, pi);
 	}
 	
 	return 0;
