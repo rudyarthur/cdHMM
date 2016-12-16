@@ -46,19 +46,16 @@ public:
 		  //log( sum x exp( -x/b ) ) < 0 => EOexp_neg > EOexp_pos
 		  //ldiff( EOexp_neg - EOexp_pos ) = log( -sum x exp( -x/b ) ) = EOexp
 		  //exp(EOexp - Eexp) = -sum( x e^{-x/b} ) / sum( e^{-x/b} )
-		  //cout << "hi 1 " << (EOexp_neg) << " " << (EOexp_pos) << endl;
 		  if( EOexp_neg > EOexp_pos ){
 			  EOexp = EOexp_neg;
 			  if( EOexp != EOexp ){
 				  cerr << "error" << endl; exit(1);
 			  }
 			  ldiff(EOexp, EOexp_pos);
-			  //cout << "n>p return " << b - exp(EOexp - Eexp) - (av) << endl; exit(1);
 			  return b - exp(EOexp - Eexp) - (av); 
 		  } else {
 			  EOexp = EOexp_pos;
 			  ldiff(EOexp, EOexp_neg);
-			  //cout << "p>n return " << b + exp(EOexp - Eexp) - (av) << endl; exit(1);
 			  return b + exp(EOexp - Eexp) - (av);  
 		  }
 		  return b - (av); 
@@ -66,8 +63,8 @@ public:
 
 };
 
-double gumbel_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
-double start, double end, int max_iter, double eps){
+fit_params gumbel_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
+max_lhood_params mlp){
 	
 	Gumbel my_f;
 	my_f.wp.O = &O;
@@ -75,8 +72,7 @@ double start, double end, int max_iter, double eps){
 	my_f.wp.sumgamma = &sumgamma;
 	my_f.wp.i = i;
 	
-	vector<double> range = {start, end};
-	return brent(range, max_iter, eps, my_f);
-	return 0;
-	
+
+	return brent(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
+
 }

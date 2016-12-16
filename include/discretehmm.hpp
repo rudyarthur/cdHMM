@@ -14,12 +14,22 @@ public:
 	multinomialHMM(){
 		this->setsize(0,0);
 		this->setIters(0,0);
+		
+		this->type = "Discrete";
 	}
 	
 	//Constructor
 	multinomialHMM(int N_, int M_, int min_, int max_){
 		this->setsize(N_,M_);
 		this->setIters(min_,max_);
+		
+		this->type = "Discrete";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = b_i\n";
+		cerr << "b_i = B[i][0]" << endl;
 	}
 	
 	void initB(){
@@ -71,37 +81,6 @@ public:
 		discrete_distribution<int> b_dist(this->B[state].begin(), this->B[state].end());
 		return b_dist(this->generator);
 	}
-	
-	/*void graph(vector<string> &label, double lb, int p_=4 ){
-		cout << fixed << setw(p_) << "digraph G {\n";
-		for(int i=0; i<A.size(); ++i){ 
-			cout << "\tState" << i << ";\n";
-		}
-		
-		for(int j=0; j<B[0].size(); ++j){ 
-			cout << "{ rank=sink; \t" << label[j] << " [ shape=box ];}\n";
-		}
-		
-		for(int i=0; i<A.size(); ++i){ 
-			for(int j=0; j<A[i].size(); ++j){ 
-				if( A[i][j] > lb ){
-					cout << "\tState" << i << " -> State" << j;
-					cout << fixed << setw(p_) << " [ label= \"" << A[i][j] << "\" ];\n"; 
-				}
-			} 
-		} 
-		
-		for(int i=0; i<B.size(); ++i){ 
-			for(int j=0; j<B[i].size(); ++j){ 
-				if( B[i][j] > lb ){
-					cout << fixed << setw(p_) << "\tState" << i << " -> " << label[j] << 
-					" [ style=dotted, label= \"" << B[i][j] << "\" ];\n";
-				}
-			} 
-		} 
-		
-		cout << "}\n";
-	}*/
 	
 };
 

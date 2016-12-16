@@ -45,8 +45,8 @@ public:
 
 };
 
-double weibull_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
-double start, double end, int max_iter, double eps){
+fit_params weibull_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
+max_lhood_params mlp){
 	
 	Weibull my_f;
 	my_f.wp.O = &O;
@@ -54,8 +54,7 @@ double start, double end, int max_iter, double eps){
 	my_f.wp.sumgamma = &sumgamma;
 	my_f.wp.i = i;
 	
-	vector<double> range = {start, end};
-	return brent(range, max_iter, eps, my_f);
-	return 0;
+	return brent(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
+
 	
 }

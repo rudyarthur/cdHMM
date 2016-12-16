@@ -26,7 +26,7 @@ public:
 
 };
 
-double gamma_solve(double pm, max_lhood_params mlp){ 
+fit_params gamma_solve(double pm, max_lhood_params mlp){ 
 	
 	vector<double> p = {pm};
 	PsiGamma my_f(p);

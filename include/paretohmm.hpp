@@ -33,7 +33,7 @@ vector<double> lb;
 	
 	void info(){
 		cerr << this->type << " HMM" << endl;
-		cerr << "prob( Emit O | state=i ) = a_i lb_i^a_i / x^(a_i+1) if x > lb_i else 0\n";
+		cerr << "prob( Emit O | state=i ) = a_i lb_i^a_i / O^(a_i+1) if O > lb_i else 0\n";
 		cerr << "a_i = B[i][0]\n";
 		cerr << "lb_i is fixed by user. Default is 0." << endl;
 	}

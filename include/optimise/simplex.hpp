@@ -1,4 +1,4 @@
-/* from GSL
+/* from MYGSL
 /* multimin/simplex2.c
  * 
  * Copyright (C) 2007, 2008, 2009 Brian Gough
@@ -44,9 +44,9 @@
 
 using namespace std;
 
-#define GSL_SUCCESS 0
-#define GSL_CONTINUE 2
-#define GSL_EBADFUNC 9
+#define MYGSL_SUCCESS 0
+#define MYGSL_CONTINUE 2
+#define MYGSL_EBADFUNC 9
 
 static void dscal  (double alpha, vector<double> &X){
 	for(int i=0; i<X.size(); ++i){ X[i] *= alpha; }
@@ -74,129 +74,6 @@ static int min_index (vector<double> &v){
 }
 
 /* minimization of non-differentiable functions */
-
-typedef struct 
-{
-  const char *name;
-  size_t size;
-  int (*alloc) (void *state, size_t n);
-  int (*set) (void *state, FuncNd *f,
-              vector<double> &x, 
-              double * size,
-              vector<double> &step_size);
-  int (*iterate) (void *state, FuncNd *f, 
-                  vector<double> &x, 
-                  double * size,
-                  double * fval);
-  //void (*free) (void *state); //using std vector don't need to free
-}
-gsl_multimin_fminimizer_type;
-
-typedef struct 
-{
-  /* multi dimensional part */
-  const gsl_multimin_fminimizer_type *type;
-  FuncNd *f;
-
-  double fval;
-  vector<double> x;
-  
-  double size;
-
-  void *state;
-}
-gsl_multimin_fminimizer;
-
-gsl_multimin_fminimizer *
-gsl_multimin_fminimizer_alloc (const gsl_multimin_fminimizer_type * T,
-                               size_t n)
-{
-  int status;
-  
-  gsl_multimin_fminimizer *s =
-    (gsl_multimin_fminimizer *) malloc (sizeof (gsl_multimin_fminimizer));
-
-  if (s == 0)
-    {
-	  cerr << "failed to allocate space for minimizer struct" << endl; exit(1);
-    }
-
-  s->type = T;
-
-  s->x.resize(n);
-
-  s->state = malloc (T->size);
-
-  if (s->state == 0)
-    {
-      free (s);
-      cerr << "failed to allocate space for minimizer state" << endl; exit(1);
-    }
-
-  status = (T->alloc) (s->state, n);
-
-  if (status != GSL_SUCCESS)
-    {
-      free (s->state);
-      free (s);
-      cerr << "failed to initialize minimizer state" << endl; exit(1);
-    }
-
-  return s;
-}
-
-int
-gsl_multimin_fminimizer_set (gsl_multimin_fminimizer * s,
-                             FuncNd &f,
-                             vector<double> &x,
-                             vector<double> &step_size)
-{
-
-  if (s->x.size() != f.dim)
-    {
-	  cerr << "function incompatible with solver size" << endl; exit(1);
-    }
-
-  if (x.size() != f.dim || step_size.size() != f.dim) 
-    {
-	  cerr << "vector length not compatible with function" << endl; exit(1);
-    }  
-    
-  s->f = &f;
-
-  (s->x) = (x); 
-  
-  return (s->type->set) (s->state, s->f, s->x, &(s->size), step_size);
-}
-
-int
-gsl_multimin_fminimizer_iterate (gsl_multimin_fminimizer * s)
-{
-  return (s->type->iterate) (s->state, s->f, s->x, &(s->size), &(s->fval));
-}
-
-double
-gsl_multimin_fminimizer_size (const gsl_multimin_fminimizer * s)
-{
-  return s->size;
-}
-
-int
-gsl_multimin_test_size (const double size, double epsabs)
-{
-  if (epsabs < 0.0)
-    {
-	  cerr << "absolute tolerance is negative" << endl; exit(1);
-    }
-  
-  if (size < epsabs)
-    {
-      return GSL_SUCCESS;
-    }
-
-  return GSL_CONTINUE;
-}
-
 typedef struct
 {
   vector<vector<double> > x1;		/* simplex corner points */
@@ -211,14 +88,140 @@ typedef struct
 }
 nmsimplex_state_t;
 
+typedef struct 
+{
+  //const char *name;
+  //size_t size;
+  int alloc (nmsimplex_state_t &state, size_t n);
+  int set (nmsimplex_state_t &state, FuncNd *f,
+              vector<double> &x, 
+              double * size,
+              vector<double> &step_size);
+  int iterate (nmsimplex_state_t &state, FuncNd *f, 
+                  vector<double> &x, 
+                  double * size,
+                  double * fval);
+
+}
+gsl_multimin_fminimizer_type;
+
+
+
+typedef struct 
+{
+  /* multi dimensional part */
+  gsl_multimin_fminimizer_type type;
+  FuncNd *f;
+
+  double fval;
+  vector<double> x;
+  
+  double size;
+
+  nmsimplex_state_t state;
+}
+gsl_multimin_fminimizer;
+
+gsl_multimin_fminimizer 
+gsl_multimin_fminimizer_alloc (gsl_multimin_fminimizer_type &T,
+                               size_t n)
+{
+  int status;
+  
+  gsl_multimin_fminimizer s;
+	//= (gsl_multimin_fminimizer *) malloc (sizeof (gsl_multimin_fminimizer));
+
+ /* if (s == 0)
+    {
+	  cerr << "failed to allocate space for minimizer struct" << endl; exit(1);
+    }*/
+
+  s.type = T;
+
+  s.x.resize(n);
+
+  /*s->state = malloc (T->size);
+
+  if (s->state == 0)
+    {
+      free (s);
+      cerr << "failed to allocate space for minimizer state" << endl; exit(1);
+    }*/
+
+  status = T.alloc(s.state, n);
+
+  /*if (status != MYGSL_SUCCESS)
+    {
+      free (s->state);
+      free (s);
+      cerr << "failed to initialize minimizer state" << endl; exit(1);
+    }*/
+
+  return s;
+}
+
+int
+gsl_multimin_fminimizer_set (gsl_multimin_fminimizer &s,
+                             FuncNd &f,
+                             vector<double> &x,
+                             vector<double> &step_size)
+{
+
+  if (s.x.size() != f.dim)
+    {
+	  cerr << "function incompatible with solver size" << endl; exit(1);
+    }
+
+  if (x.size() != f.dim || step_size.size() != f.dim) 
+    {
+	  cerr << "vector length not compatible with function" << endl; exit(1);
+    }  
+    
+  s.f = &f;
+
+  (s.x) = (x); 
+  
+  return s.type.set(s.state, s.f, s.x, &(s.size), step_size);
+}
+
+int
+gsl_multimin_fminimizer_iterate (gsl_multimin_fminimizer &s)
+{
+  return s.type.iterate(s.state, s.f, s.x, &(s.size), &(s.fval));
+}
+
+double
+gsl_multimin_fminimizer_size (gsl_multimin_fminimizer &s)
+{
+  return s.size;
+}
+
+int
+gsl_multimin_test_size (const double size, double epsabs)
+{
+  if (epsabs < 0.0)
+    {
+	  cerr << "absolute tolerance is negative" << endl; exit(1);
+    }
+  
+  if (size < epsabs)
+    {
+      return MYGSL_SUCCESS;
+    }
+
+  return MYGSL_CONTINUE;
+}
+
+
+
 static int
-compute_center (const nmsimplex_state_t * state, vector<double> &center);
+compute_center (const nmsimplex_state_t &state, vector<double> &center);
 static double
-compute_size (nmsimplex_state_t * state, vector<double> &center);
+compute_size (nmsimplex_state_t &state, vector<double> &center);
 
 static double
 try_corner_move (const double coeff,
-		 const nmsimplex_state_t * state,
+		 const nmsimplex_state_t &state,
 		 size_t corner,
 		 vector<double> &xc, FuncNd *f)
 {
@@ -228,16 +231,16 @@ try_corner_move (const double coeff,
      return value 
    */
   
-  const size_t P = state->x1.size();
+  const size_t P = state.x1.size();
   double newval;
 
   /* xc = (1-coeff)*(P/(P-1)) * center(all) + ((P*coeff-1)/(P-1))*x_corner */
   {
     double alpha = (1 - coeff) * P / (P - 1.0);
     double beta = (P * coeff - 1.0) / (P - 1.0);
-    vector<double> row = state->x1[corner]; 
+    vector<double> row = state.x1[corner]; 
     
-	xc = (state->center);
+	xc = (state.center);
     dscal (alpha, xc);
     daxpy (beta, row, xc);
   }
@@ -249,42 +252,42 @@ try_corner_move (const double coeff,
 
 
 static void
-update_point (nmsimplex_state_t * state, size_t i,
+update_point (nmsimplex_state_t &state, size_t i,
 	      vector<double> &x, double val)
 {
-  const size_t P = state->x1.size();
+  const size_t P = state.x1.size();
 
   /* Compute delta = x - x_orig */
-  state->delta = x;
-  daxpy(-1.0, state->x1[i], state->delta);
+  state.delta = x;
+  daxpy(-1.0, state.x1[i], state.delta);
   
   /* Compute xmc = x_orig - c */
-  state->xmc = state->x1[i];
-  daxpy(-1, state->center, state->xmc);
+  state.xmc = state.x1[i];
+  daxpy(-1, state.center, state.xmc);
 
   /* Update size: S2' = S2 + (2/P) * (x_orig - c).delta + (P-1)*(delta/P)^2 */
   {
-    double d = dnrm2 (state->delta);
+    double d = dnrm2 (state.delta);
     double xmcd;
 
-    xmcd = ddot (state->xmc, state->delta);
-    state->S2 += (2.0 / P) * xmcd + ((P - 1.0) / P) * (d * d / P);
+    xmcd = ddot (state.xmc, state.delta);
+    state.S2 += (2.0 / P) * xmcd + ((P - 1.0) / P) * (d * d / P);
   }
 
   /* Update center:  c' = c + (x - x_orig) / P */
 
   {
     double alpha = 1.0 / P;
-    daxpy (-alpha, state->x1[i], state->center);
-    daxpy (alpha, x, state->center);
+    daxpy (-alpha, state.x1[i], state.center);
+    daxpy (alpha, x, state.center);
   }
 
-  state->x1[i] = x; 
-  state->y1[i] = val;  
+  state.x1[i] = x; 
+  state.y1[i] = val;  
 }
 
 static int
-contract_by_best (nmsimplex_state_t * state, size_t best,
+contract_by_best (nmsimplex_state_t &state, size_t best,
 		  vector<double> &xc, FuncNd *f)
 {
 
@@ -299,19 +302,19 @@ contract_by_best (nmsimplex_state_t * state, size_t best,
   size_t i, j;
   double newval;
 
-  int status = GSL_SUCCESS;
+  int status = MYGSL_SUCCESS;
 
-  for (i = 0; i < state->x1.size(); i++)
+  for (i = 0; i < state.x1.size(); i++)
     {
       if (i != best)
 	{
-	  for (j = 0; j < state->x1[i].size(); j++)
+	  for (j = 0; j < state.x1[i].size(); j++)
 	    {
-	      state->x1[i][j] = 0.5 * (state->x1[i][j] + state->x1[best][j]); 
+	      state.x1[i][j] = 0.5 * (state.x1[i][j] + state.x1[best][j]); 
 	    }
 
 	  /* evaluate function in the new point */
-	  state->y1[i] = f->eval( state->x1[i] );
+	  state.y1[i] = f->eval( state.x1[i] );
 
 	  /* notify caller that we found at least one bad function value.
 	     we finish the contraction (and do not abort) to allow the user
@@ -319,31 +322,31 @@ contract_by_best (nmsimplex_state_t * state, size_t best,
 
 	  if (!isfinite (newval))
 	    {
-	      status = GSL_EBADFUNC;
+	      status = MYGSL_EBADFUNC;
 	    }
 	}
     }
 
   
   /* We need to update the centre and size as well */
-  compute_center (state, state->center);
-  compute_size (state, state->center);
+  compute_center (state, state.center);
+  compute_size (state, state.center);
 
   return status;
 }
 
 static int
-compute_center (const nmsimplex_state_t * state, vector<double> &center)
+compute_center (const nmsimplex_state_t &state, vector<double> &center)
 {
   /* calculates the center of the simplex and stores in center */  
-  const size_t P = state->x1.size();
+  const size_t P = state.x1.size();
   size_t i;
 
   set_zero (center); 
   
   for (i = 0; i < P; i++)
     {
-      daxpy(1.0, state->x1[i], center);
+      daxpy(1.0, state.x1[i], center);
     }
 
   {
@@ -351,11 +354,11 @@ compute_center (const nmsimplex_state_t * state, vector<double> &center)
     dscal (alpha, center);
   }
 
-  return GSL_SUCCESS;
+  return MYGSL_SUCCESS;
 }
 
 static double
-compute_size (nmsimplex_state_t * state, vector<double> &center)
+compute_size (nmsimplex_state_t &state, vector<double> &center)
 {
   /* calculates simplex size as rms sum of length of vectors 
      from simplex center to corner points:     
@@ -363,8 +366,8 @@ compute_size (nmsimplex_state_t * state, vector<double> &center)
      sqrt( sum ( || y - y_middlepoint ||^2 ) / n )
    */
 
-  vector<vector<double> > x1 = (state->x1); 
-  const size_t P = state->x1.size();
+  vector<vector<double> > x1 = (state.x1); 
+  const size_t P = state.x1.size();
   size_t i;
 
   double ss = 0.0;
@@ -372,43 +375,43 @@ compute_size (nmsimplex_state_t * state, vector<double> &center)
   for (i = 0; i < P; i++)
     {
       double t;
-      state->ws1 = state->x1[i]; 
-      daxpy(-1.0, center, state->ws1); 
-      t = dnrm2(state->ws1); 
+      state.ws1 = state.x1[i]; 
+      daxpy(-1.0, center, state.ws1); 
+      t = dnrm2(state.ws1); 
       ss += t * t;
     }
 
   /* Store squared size in the state */
-  state->S2 = (ss / P);
+  state.S2 = (ss / P);
   
   return sqrt (ss / P);
 }
 
-static int
-nmsimplex_alloc (void *vstate, size_t n)
+int
+gsl_multimin_fminimizer_type::alloc (nmsimplex_state_t &state, size_t n)
 {
-  nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
+  //nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
 
   if (n == 0)
     {
       cerr << "invalid number of parameters specified" << endl;  exit(1);
     }
 
-  state->x1 = vector< vector<double> >(n+1, vector<double>(n,0) );
-  state->y1.resize(n+1);
-  state->ws1.resize(n);
-  state->ws2.resize(n);
-  state->center.resize(n);
-  state->delta.resize(n);
-  state->xmc.resize(n);
+  state.x1 = vector< vector<double> >(n+1, vector<double>(n,0) );
+  state.y1.resize(n+1);
+  state.ws1.resize(n);
+  state.ws2.resize(n);
+  state.center.resize(n);
+  state.delta.resize(n);
+  state.xmc.resize(n);
   
-  state->count = 0;
+  state.count = 0;
 
-  return GSL_SUCCESS;
+  return MYGSL_SUCCESS;
 }
 
-static int
-nmsimplex_set (void *vstate, FuncNd *f,
+int
+gsl_multimin_fminimizer_type::set (nmsimplex_state_t &state, FuncNd *f,
 	       vector<double> &x,
 	       double *size, vector<double> &step_size)
 {
@@ -417,9 +420,9 @@ nmsimplex_set (void *vstate, FuncNd *f,
   double val;
 
 
-  nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
+  //nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
 
-  vector<double> xtemp = state->ws1; 
+  vector<double> xtemp = state.ws1; 
   if (xtemp.size() != x.size())
     {
       cerr << "incompatible size of x" << endl; exit(1);
@@ -438,8 +441,8 @@ nmsimplex_set (void *vstate, FuncNd *f,
       cerr << "non-finite function value encountered" << endl; exit(1);
     }
 
-  state->x1[0] = x;
-  state->y1[0] = val;
+  state.x1[0] = x;
+  state.y1[0] = val;
 
   /* following points are initialized to x0 + step_size */
 
@@ -459,36 +462,36 @@ nmsimplex_set (void *vstate, FuncNd *f,
 	{
 	  cerr << "non-finite function value encountered" << endl; exit(1);
 	}
-	  state->x1[i+1] = xtemp;
-      state->y1[i+1] = val;
+	  state.x1[i+1] = xtemp;
+      state.y1[i+1] = val;
     }
 
-  compute_center (state, state->center);
+  compute_center (state, state.center);
 
   /* Initialize simplex size */
-  *size = compute_size (state, state->center);
+  *size = compute_size (state, state.center);
 
-  state->count++;
+  state.count++;
 
-  return GSL_SUCCESS;
+  return MYGSL_SUCCESS;
 }
 
-static int
-nmsimplex_iterate (void *vstate, FuncNd *f,
+int
+gsl_multimin_fminimizer_type::iterate (nmsimplex_state_t &state, FuncNd *f,
 		   vector<double> &x, double *size, double *fval)
 {
 
   /* Simplex iteration tries to minimize function f value */
   /* Includes corrections from Ivo Alxneit <ivo.alxneit@psi.ch> */
 
-  nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
+  //nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
 
   /* xc and xc2 vectors store tried corner point coordinates */
-  vector<double> xc = state->ws1; 
-  vector<double> xc2 = state->ws2;  
+  vector<double> xc = state.ws1; 
+  vector<double> xc2 = state.ws2;  
 
 
-  const size_t n = state->y1.size();
+  const size_t n = state.y1.size();
   size_t i;
   size_t hi, s_hi, lo;
   double dhi, ds_hi, dlo;
@@ -502,16 +505,16 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
 
   /* get index of highest, second highest and lowest point */
 
-  dhi = dlo = state->y1[0]; 
+  dhi = dlo = state.y1[0]; 
   hi = 0;
   lo = 0;
 
-  ds_hi = state->y1[1]; 
+  ds_hi = state.y1[1]; 
   s_hi = 1;
 
   for (i = 1; i < n; i++)
     {
-      val = state->y1[i]; 
+      val = state.y1[i]; 
       if (val < dlo)
 	{
 	  dlo = val;
@@ -534,12 +537,12 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
   /* try reflecting the highest value point */
   val = try_corner_move (-1.0, state, hi, xc, f);
   
-  if (isfinite (val) && val < state->y1[lo]) 
+  if (isfinite (val) && val < state.y1[lo]) 
     {
       /* reflected point is lowest, try expansion */
       val2 = try_corner_move (-2.0, state, hi, xc2, f);
 
-      if (isfinite (val2) && val2 < state->y1[lo])
+      if (isfinite (val2) && val2 < state.y1[lo])
 	{
 	  update_point (state, hi, xc2, val2);
 	}
@@ -548,12 +551,12 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
 	  update_point (state, hi, xc, val);
 	}
     }
-  else if (!isfinite (val) || val > state->y1[s_hi]) 
+  else if (!isfinite (val) || val > state.y1[s_hi]) 
     {
       /* reflection does not improve things enough, or we got a
          non-finite function value */
 
-      if (isfinite (val) && val <= state->y1[hi]) 
+      if (isfinite (val) && val <= state.y1[hi]) 
 	{
 	  /* if trial point is better than highest point, replace
 	     highest point */
@@ -563,7 +566,7 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
       /* try one-dimensional contraction */
       val2 = try_corner_move (0.5, state, hi, xc2, f);
 
-      if (isfinite (val2) && val2 <= state->y1[hi]) 
+      if (isfinite (val2) && val2 <= state.y1[hi]) 
 	{
 	  update_point (state, hi, xc2, val2);
 	}
@@ -572,7 +575,7 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
 	  /* contract the whole simplex about the best point */
 	  status = contract_by_best (state, lo, xc, f);
 
-	  if (status != GSL_SUCCESS)
+	  if (status != MYGSL_SUCCESS)
 	    {
 	      cerr << "contraction failed" << endl; exit(1); 
 	    }
@@ -586,14 +589,14 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
     }
 
   /* return lowest point of simplex as x */
-  lo = min_index(state->y1);
-  x = state->x1[lo];
+  lo = min_index(state.y1);
+  x = state.x1[lo];
   
-  *fval = state->y1[lo]; 
+  *fval = state.y1[lo]; 
   
   /* Update simplex size */
   {
-    double S2 = state->S2;
+    double S2 = state.S2;
 
     if (S2 > 0)
       {
@@ -602,68 +605,70 @@ nmsimplex_iterate (void *vstate, FuncNd *f,
     else
       {
 	/* recompute if accumulated error has made size invalid */
-	*size = compute_size (state, state->center);
+	*size = compute_size (state, state.center);
       }
   }
 
-  return GSL_SUCCESS;
+  return MYGSL_SUCCESS;
 }
 
 static const gsl_multimin_fminimizer_type nmsimplex_type = 
-{ "nmsimplex2",	//name 
-  sizeof (nmsimplex_state_t),
-  &nmsimplex_alloc,
-  &nmsimplex_set,
-  &nmsimplex_iterate,
+{ //"nmsimplex2",	//name 
+  //sizeof (nmsimplex_state_t),
+  //&nmsimplex_alloc,
+  //&nmsimplex_set,
+  //&nmsimplex_iterate,
 };
 
-const gsl_multimin_fminimizer_type
-  * gsl_multimin_fminimizer_nmsimplex2 = &nmsimplex_type;
+gsl_multimin_fminimizer_type gsl_multimin_fminimizer_nmsimplex2 = nmsimplex_type;
 
-int simplex(vector<double> &x, int max_iter, double eps, FuncNd &f){
+fit_params simplex(vector<double> &x, int max_iter, double eps, FuncNd &f){
 	
-  int iter = 0;
-  int status;
-  double size;
+  fit_params fp;
+  fp.root = 0; //not used
+  fp.iter = 0;
   
-  const gsl_multimin_fminimizer_type *T = 
+  int status;
+  
+  gsl_multimin_fminimizer_type T = 
     gsl_multimin_fminimizer_nmsimplex2;
-  gsl_multimin_fminimizer *s = NULL;
+  gsl_multimin_fminimizer s;// = NULL;
 
 
   // Set initial step sizes to 1 
   vector<double> ss( x.size() , 1.0 );
 
   // Initialize method and iterate 
-  s = gsl_multimin_fminimizer_alloc (T, 2);
+  s = gsl_multimin_fminimizer_alloc (T, f.dim);
   gsl_multimin_fminimizer_set (s, f, x, ss);
 
   do
     {
-      iter++;
+      fp.iter++;
       status = gsl_multimin_fminimizer_iterate(s);
          
       if (status) 
         break;
 
-      size = gsl_multimin_fminimizer_size (s);
-      status = gsl_multimin_test_size (size, eps);
+      fp.residual = gsl_multimin_fminimizer_size (s);
+      status = gsl_multimin_test_size (fp.residual, eps);
       
       
-      if (status == GSL_SUCCESS)
+     /* if (status == MYGSL_SUCCESS)
         {
           printf ("converged to minimum at\n");
         }
 
-      printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
-              iter,
-              s->x[0], 
-              s->x[1], 
-              s->fval, size);
-              
+      printf ("%5d %10.3e %10.3e %10.3e f() = %7.3f size = %.3f\n", 
+              fp.iter,
+              s.x[0], 
+              s.x[1], 
+              s.x[2], 
+              s.fval, fp.residual);
+       */       
     }
-  while (status == GSL_CONTINUE && iter < max_iter);
-  x = s->x;
+  while (status == MYGSL_CONTINUE && fp.iter < max_iter);
+  fp.mroot = s.x;
 
-  return iter;
+  return fp;
 }

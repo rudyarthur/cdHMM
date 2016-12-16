@@ -17,12 +17,23 @@ public:
 	weibullHMM(){
 		this->setsize(0,2);
 		this->setIters(0,0);
+		
+		this->type = "Weibull";
 	}
 	
 	//Constructor
 	weibullHMM(int N_, int min_, int max_){
 		this->setsize(N_,2);
 		this->setIters(min_,max_);
+		
+		this->type = "Weibull";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = ( k_i / lambda_i ) ( O / lambda_i )^(k_i-1)  exp( -(O / lambda_i )^k_i )\n";
+		cerr << "k_i = B[i][0]" << endl;
+		cerr << "lambda_i = B[i][1]" << endl;
 	}
 	
 	void initB(){
@@ -45,13 +56,23 @@ public:
 	//re-estimate B from model
 	void reestimate_B(vector<obs_type> &O){ 
 
+		if( !this->set_logO){ this->calc_logO(O); }
+		if( this->no_logO ){ 
+			cerr << "Weibull requires O > 0" << endl; exit(1); 
+		}
+		fit_params fp;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 			
-			this->B[i][0] = weibull_solve(O, this->gamma, this->sumgamma, i, 1e-10, 100000, 100, 1e-5);
+			fp = weibull_solve(O, this->gamma, this->sumgamma, i, this->mlp);
+			if( fp.iter == this->mlp.max_iter ){
+				cerr << "Max Likelihood estimate for weibull params failed to converge in " << fp.iter << " iterations" << endl;
+				cerr << "Residual = " << fp.residual << endl;
+			}
+			this->B[i][0] = fp.root;
 			
-			this->B[i][1] = log( this->gamma[i][0] ) + log( O[0] );
+			this->B[i][1] = log( this->gamma[i][0] ) + this->logO[0];
 			for(int t=1; t<this->T; ++t){ 
-				lsum( this->B[i][1], log( this->gamma[i][t] ) + log( O[t] ) );  //log( E[ O^k ] ) 
+				lsum( this->B[i][1], log( this->gamma[i][t] ) + this->logO[t]  );  //log( E[ O^k ] ) 
 			}
 			this->B[i][1] -= log(this->sumgamma[i]); //log( E[ O^k ] ) 
 			this->B[i][1] = exp( this->B[i][1] / this->B[i][0] ); 

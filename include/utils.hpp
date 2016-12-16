@@ -24,7 +24,9 @@ using namespace std;
 struct max_lhood_params {
 	
 	int dim;
+	//start vector (start range for brent or start point for simplex dim = x_start.size() ) 
 	vector<double> x_start;
+	//stopping criteria
 	double eps;
 	int max_iter;
 	

@@ -2,22 +2,22 @@
 
 #include <math.h>       
 #include "optimise/function.hpp"
-#include "optimise/brent.hpp"
+#include "optimise/simplex.hpp"
 
 using namespace std;
 
 class GEV : public FuncNd{
 public:
 	
-	GEV(vector<double> &p){ 
+	GEV(){ 
 		this->dim = 3;
 	}
-	
+	//From GNU Octave
 	double eval(vector<double> &v){
       
-		  double mu = v[0]; //gsl_vector_get(v, 0);
-		  double sigma = v[1]; //gsl_vector_get(v, 1);
-		  double k = v[2]; //gsl_vector_get(v, 2);
+		  double mu = v[0]; 
+		  double sigma = v[1]; 
+		  double k = v[2]; 
 		  
 		  int T = wp.O->size();
 		  int i = wp.i;
@@ -66,7 +66,6 @@ public:
 			} else {
 			  vector<double> b(T); for(int t=0; t<T; ++t){ b[t] = 1 + aa[t]; if(b[t] <= 0 ){ return 1e200; } } //b = 1 + k(x-m)/s
 			  for(int t=0; t<T; ++t){ 
-				  //cout << p->O[t] << " " << -(pow( b[t], -1/k ) + (1+1/k) * log(b[t]) + log(sigma)) << endl; exit(1);
 				  nlogL += (pow( b[t], -1/k ) + (1+1/k) * log(b[t]) + log(sigma))* (*wp.gamma)[i][t]; 
 			  }
 			}
@@ -76,12 +75,16 @@ public:
 
 };
 
-double gamma_solve1(double pm, double start, double end, int max_iter, double eps){
+fit_params extreme_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
+max_lhood_params mlp){
 	
-	/*vector<double> p = {pm};
-	PsiGamma my_f(p);
+	GEV my_f;
+	my_f.wp.O = &O;
+	my_f.wp.gamma = &gamma;
+	my_f.wp.sumgamma = &sumgamma;
+	my_f.wp.i = i;
 	
-	vector<double> range = {start, end};
-	return brent(range, max_iter, eps, my_f);*/
-	
+
+	return simplex(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
+
 }

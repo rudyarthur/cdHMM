@@ -31,14 +31,15 @@ using namespace std;
  */
 
 /* brent.c -- brent root finding algorithm */
-double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
-	
-  double root;
-  
+fit_params brent(vector<double> &x, int max_iter, double eps, Func1d &f){
+
+  fit_params fp;
+  fp.mroot.resize(0); //not used
+
   double a, b, c, d, e;
   double fa, fb, fc;
 
-  root = 0.5 * (x[0] + x[1]) ;
+  fp.root = 0.5 * (x[0] + x[1]) ;
 
   a = x[0];
   fa = f.eval(a);
@@ -58,8 +59,7 @@ double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
       exit(1);
   }
   
-  int iter = 0;
-  
+  fp.iter = 0;
   double tolerance, old_val;
   bool more = true;
   
@@ -96,16 +96,16 @@ double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
 
   if (fb == 0)
     {
-      root = b;
+      fp.root = b;
       x[0] = b;
       x[1] = b;
-      
-      return root;
+      fp.residual = 0;
+      return fp;
     }
   
   if (fabs (m) <= tol)
     {
-      root = b;
+      fp.root = b;
 
       if (b < c) 
         {
@@ -117,8 +117,8 @@ double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
           x[0] = c;
           x[1] = b;
         }
-
-      return root;
+      fp.residual = m;
+      return fp;
     }
   
   if (fabs (e) < tol || fabs (fa) <= fabs (fb))
@@ -186,7 +186,7 @@ double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
   /* Update the best estimate of the root and bounds on each
      iteration */
   
-  root = b;
+  fp.root = b;
   
   double tc = c;
   if ((fb < 0 && fc < 0) || (fb > 0 && fc > 0)) 
@@ -204,13 +204,11 @@ double brent(vector<double> &x, int max_iter, double eps, Func1d &f){
       x[0] = tc;
       x[1] = b;
     }
-
-    more = !(fabs(x[1] - x[0]) < eps * min( fabs(x[0]), fabs(x[1]) ));
-    //cout << iter << " " << x[0] << " " << x[1] << endl;
-    ++iter;
+    fp.residual = fabs(x[1] - x[0]);
+    more = !(fp.residual < eps * min( fabs(x[0]), fabs(x[1]) ));
+    ++fp.iter;
        
-  } while (more && iter < max_iter);
+  } while (more && fp.iter < max_iter);
 
-
-  return root;
+  return fp;
 }

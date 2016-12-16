@@ -31,6 +31,9 @@ bool setup;
 		setup = false;
 	}
 	
+	void info(){ cerr << "hi" << endl; }
+	
+	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 		hmm1->init();

@@ -62,7 +62,9 @@ public:
 	//Some distributions need to get max likelihood parameters numerically
 	max_lhood_params mlp;
 	
-	
+	//So generic HMM has a setB method without needing to reimplement it in ecery realization
+	void setB(vector<vector<double> > &inB){ B = inB; }
+
 	//Initialize Num states = N and num observations = M
 	void setsize(int N_, int M_){
 		M = M_;
@@ -75,8 +77,14 @@ public:
 		minIters = min_;
 		print_iter = false;
 		max_lhood = -numeric_limits<double>::infinity();
+		//default optimisation parameters
+		mlp.dim=1;
+		mlp.x_start = {1e-10, 1e5};
+		mlp.eps=1e-5;
+		mlp.max_iter=1000;
 	}
 
+	virtual void info() = 0;
 	virtual void initB() = 0;
 		
 	void calc_logA(){
@@ -149,12 +157,7 @@ public:
 		
 		lhood = -numeric_limits<double>::infinity();
 		//don't zero maxA, maxB, ... , to retain between multiple restarts
-			
-		//default optimisation parameters
-		mlp.dim=1;
-		mlp.x_start = {1e-10, 1e5};
-		mlp.eps=1e-5;
-		mlp.max_iter=100;
+	
 
 		calc_logP();
 	}

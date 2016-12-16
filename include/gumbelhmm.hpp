@@ -17,12 +17,23 @@ public:
 	gumbelHMM(){
 		this->setsize(0,2);
 		this->setIters(0,0);
+		
+		this->type = "Gumbel";
 	}
 	
 	//Constructor
 	gumbelHMM(int N_, int min_, int max_){
 		this->setsize(N_,2);
 		this->setIters(min_,max_);
+
+		this->type = "Gumbel";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = ( 1 / sigma_i )  exp( -(O - mu_i)/sigma_i - exp( - (O - mu_i)/sigma_i ) ) \n";
+		cerr << "mu_i = B[i][0]" << endl;
+		cerr << "sigma_i = B[i][1]" << endl;
 	}
 	
 	void initB(){
@@ -45,12 +56,19 @@ public:
 	//re-estimate B from model
 	void reestimate_B(vector<obs_type> &O){ 
 
+		fit_params fp;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 			this->B[i][0] = 0;  
 			this->B[i][1] = 0;
 			
-			this->B[i][1] = gumbel_solve(O, this->gamma, this->sumgamma, i, 1e-10, 100000, 100, 1e-5);
-	
+			
+			fp = gumbel_solve(O, this->gamma, this->sumgamma, i, this->mlp);
+			if( fp.iter == this->mlp.max_iter ){
+				cerr << "Max Likelihood estimate for gumbel params failed to converge in " << fp.iter << " iterations" << endl;
+				cerr << "Residual = " << fp.residual << endl;
+			}
+			this->B[i][1] = fp.root;
+			
 			this->B[i][0] = log(this->gamma[i][0]) - (O[0] / this->B[i][1]);
 			for( int t=0; t<this->T; ++t){
 				lsum( this->B[i][0] , log(this->gamma[i][t]) - (O[t] / this->B[i][1]) );

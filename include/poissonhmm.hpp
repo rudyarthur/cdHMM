@@ -15,32 +15,28 @@ public:
 	poissonHMM(){
 		this->setsize(0,1);
 		this->setIters(0,0);
+		
+		this->type = "Poisson";
 	}
 	
 	//Constructor
 	poissonHMM(int N_, int min_, int max_){
 		this->setsize(N_,1);
 		this->setIters(min_,max_);
+		
+		this->type = "Poisson";
+	}
+	
+	void info(){
+		cerr << this->type << " HMM" << endl;
+		cerr << "prob( Emit O | state=i ) = exp( -lambda_i ) O^lambda_i / O!\n";
+		cerr << "lambda_i = B[i][0]" << endl;
 	}
 	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 	}
 	
-	void initB(vector<obs_type> &O){
-		initB();
-		double av = 0;
-		int nm = 0;
-		for(int t=0; t<O.size(); ++t){
-			if(O[t] != 0){ av += O[t]; ++nm; }
-		}
-		av /= nm;
-		for(int i=0; i<this->N; ++i){
-			this->B[i][0] = av;
-		}
-		this->calc_logB();
-	}
-
 	
 	inline double pB(int i, obs_type O){
 		return (O == 0) ? exp( -this->B[i][0] ) : exp( -this->B[i][0] + O * this->logB[i][0] - lgamma(O) );	//why is there no std::factorial ?!
@@ -93,23 +89,7 @@ public:
 		return b_dist(this->generator);
 	}
 	
-	/*void graph(double lb, int p_=4 ){
-		cout << fixed << setw(p_) << "digraph G {\n";
-		for(int i=0; i<B.size(); ++i){ 
-			cout << fixed << setw(p_) << "\t" << B[i][0] << ";\n";
-		}
-		
-		for(int i=0; i<A.size(); ++i){ 
-			for(int j=0; j<A[i].size(); ++j){ 
-				if( A[i][j] > lb ){
-					cout << fixed << setw(p_) << "\t" << B[i][0] << " -> " << B[j][0];
-					cout << fixed << setw(p_) << " [ label= \"" << A[i][j] << "\" ];\n"; 
-				}
-			} 
-		} 
-		
-		cout << "}\n";
-	}*/
+	
 	
 };
 

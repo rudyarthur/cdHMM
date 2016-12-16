@@ -87,6 +87,8 @@ vector<double> log_factor;
 		if( !this->set_logO){ this->calc_logO(O); }
 		if( this->no_logO ){ cerr << "Gamma function requires O > 0" << endl; exit(1); }
 		
+		fit_params fp;
+		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 
 			this->B[i][0] = 0;  this->B[i][1] = 0;
@@ -102,10 +104,16 @@ vector<double> log_factor;
 			if( exlx != exlx ){
 				cerr << "nan probabilities try to fit with uselog = true" << endl; exit(1);
 			}
-			double alpha = gamma_solve( exlx , this->mlp); 
-
+			fp = gamma_solve( exlx , this->mlp); 
+			if( fp.iter == this->mlp.max_iter ){
+				cerr << "Max Likelihood estimate for gamma params failed to converge in " << fp.iter << " iterations" << endl;
+				cerr << "Residual = " << fp.residual << endl;
+			}
+			double alpha = fp.root;
 			double beta = alpha / this->B[i][0] ;
-
+			
+			this->B[i][0] = alpha;
+			this->B[i][1] = beta;
 		}}
 		calc_factor();
 		this->calc_logB();
@@ -116,6 +124,8 @@ vector<double> log_factor;
 		if( !this->set_logO){ this->calc_logO(O); }
 		if( this->no_logO ){ cerr << "Gamma function requires O > 0" << endl; exit(1); }
 		
+		fit_params fp;
+
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 			
 			double old_a = this->B[i][0];
@@ -130,7 +140,12 @@ vector<double> log_factor;
 			this->B[i][1]  /= exp( this->sumgamma[i] ); //E[ log[O] ] 			
 			
 			double exlx = ( this->B[i][0] - this->B[i][1] ); 
-			double alpha = gamma_solve( exlx , this->mlp); 
+			fp = gamma_solve( exlx , this->mlp); 
+			if( fp.iter == this->mlp.max_iter ){
+				cerr << "Max Likelihood estimate for gamma params failed to converge in " << fp.iter << " iterations" << endl;
+				cerr << "Residual = " << fp.residual << endl;
+			}
+			double alpha = fp.root;
 			double beta = alpha / exp( this->B[i][0] ) ;
 			
 			this->B[i][0] = alpha;

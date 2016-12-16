@@ -33,8 +33,19 @@ bool setup;
 		setup = false;
 	}
 	
+	void info(){
+		cerr << this->type << " HMM" << endl;		
+		cerr << "prob( Emit O | state=i )\n";
+		int ct = 0;
+		for(int i=0; i<hmm.size(); ++i){
+			cerr << ct << " <= i < " << ct + hmm[i]->N << "\n";
+			hmm[i]->info();
+			ct += hmm[i]->N;
+		}
+	}
+		
 	void initB(){
-		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
+		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 0) );
 		for(int i=0; i<hmm.size(); ++i){ hmm[i]->init(); }
 	}
 	

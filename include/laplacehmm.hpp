@@ -30,7 +30,7 @@ public:
 		
 	void info(){
 		cerr << this->type << " HMM" << endl;
-		cerr << "prob( Emit O | state=i ) = (1 / 2b_i ) exp( -|x - mu_i|/b_i )\n";
+		cerr << "prob( Emit O | state=i ) = (1 / 2b_i ) exp( -|O - mu_i|/b_i )\n";
 		cerr << "mu_i = B[i][0]\n";
 		cerr << "b_i = B[i][1]" << endl;
 	}

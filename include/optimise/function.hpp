@@ -4,6 +4,13 @@
 
 using namespace std;
 
+struct fit_params{
+	int iter;
+	double residual;
+	double root;
+	vector<double> mroot;
+};
+
 struct weight_params
 {
 	//parameters for evaluating the function
