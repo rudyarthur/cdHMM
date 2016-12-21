@@ -52,22 +52,22 @@ The `multiHMM` type show here allows mixed emission models.
 
 The most useful HMM functions are
 
-* hmm.info(): prints info about the particular hmm object.
-* hmm.init(); puts hmm object in ready state to fit data
-* hmm.fit(data, eps); Uses EM algorithm to fit transition & emission probabilities
-* hmm.set_state_viterbi(data); Uses Viterbi algorithm to calculate most likely state sequence.
-* hmm.generate_seq(O, num, true); Generate num synthethic data points from hmm, save in O and also output to console.
+* `hmm.info(): prints info about the particular hmm object.
+* `hmm.init()`: puts hmm object in ready state to fit data
+* `hmm.fit(data, eps)`: Uses EM algorithm to fit transition & emission probabilities
+* `hmm.set_state_viterbi(data)`: Uses Viterbi algorithm to calculate most likely state sequence.
+* `hmm.generate_seq(O, num, true)`: Generate num synthethic data points from hmm, save in O and also output to console.
 
 And public data members 
 
-* hmm.A: Transition Matrix `N x N vector<vector<double> >`
-* hmm.B: Emission Matrix `N x M vector<vector<double> >`
-* hmm.pi: Starting Probabilities `N vector<double>`
-* hmm.state: State found by fit or by set_state_viterbi `num_observations vector<unsigned>`
-* hmm.maxA: Best Transition Matrix found by fit command `N x N vector<vector<double> >`
-* hmm.maxB: Best Emission Matrix found by fit command `N x M vector<vector<double> >`
-* hmm.maxpi: Best Starting Probabilities found by fit command `N vector<double>`
-* hmm.maxlhood: Maximum log likelihood found by fit command `double`
+* `hmm.A`: Transition Matrix `N x N vector<vector<double> >`
+* `hmm.B`: Emission Matrix `N x M vector<vector<double> >`
+* `hmm.pi`: Starting Probabilities `N vector<double>`
+* `hmm.state`: State found by fit or by set_state_viterbi `num_observations vector<unsigned>`
+* `hmm.maxA`: Best Transition Matrix found by fit command `N x N vector<vector<double> >`
+* `hmm.maxB`: Best Emission Matrix found by fit command `N x M vector<vector<double> >`
+* `hmm.maxpi`: Best Starting Probabilities found by fit command `N vector<double>`
+* `hmm.maxlhood`: Maximum log likelihood found by fit command `double`
 
 # Examples:
 We can do standard discrete hmm things. For example let's take the first chapter of Pride and Prejudice (provided in
