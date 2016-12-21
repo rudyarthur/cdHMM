@@ -52,7 +52,7 @@ The `multiHMM` type show here allows mixed emission models.
 
 The most useful HMM functions are
 
-* `hmm.info(): prints info about the particular hmm object.
+* `hmm.info()`: prints info about the particular hmm object.
 * `hmm.init()`: puts hmm object in ready state to fit data
 * `hmm.fit(data, eps)`: Uses EM algorithm to fit transition & emission probabilities
 * `hmm.set_state_viterbi(data)`: Uses Viterbi algorithm to calculate most likely state sequence.
