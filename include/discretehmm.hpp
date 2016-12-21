@@ -5,13 +5,15 @@
 
 using namespace std;
 
-//HMM with multinomial emission
+namespace cdHMM {
+
+//HMM with discrete emission
 //prob( Emit O | state i ) = B[i][O]
-template <typename obs_type> class multinomialHMM : public HMM<obs_type> {
+template <typename obs_type> class discreteHMM : public HMM<obs_type> {
 public:
 
 	//Default
-	multinomialHMM(){
+	discreteHMM(){
 		this->setsize(0,0);
 		this->setIters(0,0);
 		
@@ -19,7 +21,7 @@ public:
 	}
 	
 	//Constructor
-	multinomialHMM(int N_, int M_, int min_, int max_){
+	discreteHMM(int N_, int M_, int min_, int max_){
 		this->setsize(N_,M_);
 		this->setIters(min_,max_);
 		
@@ -84,3 +86,4 @@ public:
 	
 };
 
+}

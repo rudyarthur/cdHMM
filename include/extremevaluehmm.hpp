@@ -6,6 +6,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 //HMM with GEV emission
 //prob( Emit O | state i ) = (1/sigma) * t^(kappa - 1) exp( - t )
 //t = ( 1 - kappa ((O - mu)/sigma) )^1/kappa
@@ -135,3 +137,4 @@ double logsmall;
 	
 };
 
+}

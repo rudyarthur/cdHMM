@@ -4,6 +4,7 @@
 
 using namespace std;
 
+namespace cdHMM {
 
 template <typename obs_type> class HMM{
 public:
@@ -33,7 +34,7 @@ public:
 	//Best Parameters
 	vector< vector<double> > maxA, maxB;
 	vector<double> maxpi;
-	double max_lhood;
+	double maxlhood;
 		
 	//Parameters
 	vector< vector<double> > logA, logB;
@@ -76,7 +77,7 @@ public:
 		maxIters = max_;
 		minIters = min_;
 		print_iter = false;
-		max_lhood = -numeric_limits<double>::infinity();
+		maxlhood = -numeric_limits<double>::infinity();
 		//default optimisation parameters
 		mlp.dim=1;
 		mlp.x_start = {1e-10, 1e5};
@@ -619,46 +620,7 @@ public:
 		compute_alpha(O);
 		set_state();
 	}
-	//Generate stats for O and states.
-	//TODO
-	void stats(vector<obs_type> &O, vector< vector<int> > &stats, vector<double> &duration_stats, bool viterbi = false){
-		
-		if(viterbi){
-			set_state_viterbi(O);
-		} else {
-			set_state(O);
-		}
-		/*stats = vector< vector<int> >( N, vector<int>(M+1,0) );
-		
-		for(int t=0; t<T; ++t){
-			
-			++stats[ state[t] ][ O[t] ];
-			++stats[ state[t] ][ M ];
-			
-		}*/
-		
-		/*duration_stats = vector< double >(N,0);
-		vector<double> num_durs(N,0);
-		int prev = state[0];
-		int duration = 1;
-		for(int t=1; t<T; ++t){
-			if( state[t] == prev ){
-				++duration;
-			} else {
-				duration_stats[ prev ] += duration;
-				num_durs[ prev ]++;
-				duration = 1;
-			}
-			prev = state[t];
-		}
-		duration_stats[ prev ] += duration;
-		num_durs[ prev ]++;
-		
-		for(int i=0; i<N; ++i){
-			duration_stats[i] /= (double)num_durs[i];
-		}*/
-		
-	}
+	
 	
 	void printA(){
 		for(int i=0; i<N; ++i){
@@ -700,7 +662,7 @@ public:
 				ofile << pi[i] << " ";
 		} ofile << "\n";
 	}
-	//TODO print to stringstream
+
 	
 	//Fit HMM to obs seq O
 	vector<double> fit(vector<obs_type> &O, double eps, bool uselog=true){
@@ -727,6 +689,7 @@ public:
 				tmppi = pi;
 			
 				compute_log_sumgamma();
+				
 				reestimate_log(O);
 				
 				evaluate_log();
@@ -742,7 +705,11 @@ public:
 				tmpB = B;
 				tmppi = pi;
 			
-				compute_sumgamma();				
+				compute_sumgamma();		
+				
+
+				
+						
 				reestimate(O);
 								
 				evaluate();
@@ -754,8 +721,8 @@ public:
 				cerr << "Iter: " << iters << " Lhood: " << lhood << endl; 
 			}
 		
-			if(lhood > max_lhood){
-				max_lhood = lhood;
+			if(lhood > maxlhood){
+				maxlhood = lhood;
 				maxA = A;
 				maxB = B;
 				maxpi = pi;
@@ -852,5 +819,5 @@ public:
 template class HMM<double>;
 template class HMM<float>;
 template class HMM<int>;
-template class HMM<char>; 
 
+}

@@ -4,6 +4,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 struct fit_params{
 	int iter;
 	double residual;
@@ -11,31 +13,34 @@ struct fit_params{
 	vector<double> mroot;
 };
 
-struct weight_params
+template <typename T> class weight_params
 {
+public:
 	//parameters for evaluating the function
-    vector<double>* O;				//observations
+    vector<T>* O;				//observations
     vector< vector<double> >* gamma; //weights
     vector<double>* sumgamma;		//sum weights
     int i;							//state    
 };
 
-class Func1d{
+template <typename T> class Func1d{
 public:
 
 	int dim;
-	weight_params wp;
+	weight_params<T> wp;
 	vector<double> params;
 	virtual double eval(double x) = 0;
 
 };
 
-class FuncNd{
+template <typename T> class FuncNd{
 public:
 
 	int dim;
-	weight_params wp;
+	weight_params<T> wp;
 	vector<double> params;
 	virtual double eval(vector<double> &x) = 0;
 
 };
+
+}

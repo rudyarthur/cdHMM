@@ -8,6 +8,7 @@
 
 using namespace std;
 
+namespace cdHMM {
 
 //HMM with gamma emission
 //prob( Emit O | state i ) = ( beta_i^alpha_i / Gamma( alpha_i ) )   O^{alpha_i-1}   exp(-beta_i O) 
@@ -163,3 +164,4 @@ vector<double> log_factor;
 	
 };
 
+}

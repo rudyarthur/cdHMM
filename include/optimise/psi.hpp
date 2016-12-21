@@ -26,6 +26,8 @@
 #define GSL_SQRT_DBL_MIN   1.4916681462400413e-154
 #define GSL_SUCCESS 1
 
+namespace cdHMM {
+
 struct gsl_sf_result_copy_struct {
   double val;
   double err;
@@ -528,4 +530,6 @@ double psi(const double x)
   gsl_sf_result_copy result;
   int status = psi_x(x, &result);
   return result.val;
+}
+
 }

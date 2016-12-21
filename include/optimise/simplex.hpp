@@ -48,6 +48,8 @@ using namespace std;
 #define MYGSL_CONTINUE 2
 #define MYGSL_EBADFUNC 9
 
+namespace cdHMM {
+
 static void dscal  (double alpha, vector<double> &X){
 	for(int i=0; i<X.size(); ++i){ X[i] *= alpha; }
 }
@@ -88,30 +90,32 @@ typedef struct
 }
 nmsimplex_state_t;
 
-typedef struct 
+template <typename T> class gsl_multimin_fminimizer_type
 {
+public:
   //const char *name;
   //size_t size;
   int alloc (nmsimplex_state_t &state, size_t n);
-  int set (nmsimplex_state_t &state, FuncNd *f,
+  int set (nmsimplex_state_t &state, FuncNd<T> *f,
               vector<double> &x, 
               double * size,
               vector<double> &step_size);
-  int iterate (nmsimplex_state_t &state, FuncNd *f, 
+  int iterate (nmsimplex_state_t &state, FuncNd<T> *f, 
                   vector<double> &x, 
                   double * size,
                   double * fval);
+      
 
-}
-gsl_multimin_fminimizer_type;
+};
 
 
 
-typedef struct 
+template <typename S> class gsl_multimin_fminimizer
 {
+public:
   /* multi dimensional part */
-  gsl_multimin_fminimizer_type type;
-  FuncNd *f;
+  gsl_multimin_fminimizer_type<S> type;
+  FuncNd<S> *f;
 
   double fval;
   vector<double> x;
@@ -119,83 +123,56 @@ typedef struct
   double size;
 
   nmsimplex_state_t state;
-}
-gsl_multimin_fminimizer;
-
-gsl_multimin_fminimizer 
-gsl_multimin_fminimizer_alloc (gsl_multimin_fminimizer_type &T,
-                               size_t n)
-{
-  int status;
   
-  gsl_multimin_fminimizer s;
-	//= (gsl_multimin_fminimizer *) malloc (sizeof (gsl_multimin_fminimizer));
+  gsl_multimin_fminimizer (gsl_multimin_fminimizer_type<S> &T, size_t n);
+  int set (FuncNd<S> &f_, vector<double> &x_, vector<double> &step_size);
+  int iterate ();
 
- /* if (s == 0)
-    {
-	  cerr << "failed to allocate space for minimizer struct" << endl; exit(1);
-    }*/
+};
 
-  s.type = T;
 
-  s.x.resize(n);
-
-  /*s->state = malloc (T->size);
-
-  if (s->state == 0)
-    {
-      free (s);
-      cerr << "failed to allocate space for minimizer state" << endl; exit(1);
-    }*/
-
-  status = T.alloc(s.state, n);
-
-  /*if (status != MYGSL_SUCCESS)
-    {
-      free (s->state);
-      free (s);
-      cerr << "failed to initialize minimizer state" << endl; exit(1);
-    }*/
-
-  return s;
+////////////////////////////////////////
+//   gsl_multimin_fminimizer methods  //
+////////////////////////////////////////
+template <typename S> gsl_multimin_fminimizer<S>::gsl_multimin_fminimizer (
+gsl_multimin_fminimizer_type<S> &T, size_t n)
+{
+  type = T;
+  x.resize(n);
+  int status = T.alloc(state, n);
 }
 
-int
-gsl_multimin_fminimizer_set (gsl_multimin_fminimizer &s,
-                             FuncNd &f,
-                             vector<double> &x,
+template <typename S> int gsl_multimin_fminimizer<S>::set (
+                             FuncNd<S> &f_,
+                             vector<double> &x_,
                              vector<double> &step_size)
 {
 
-  if (s.x.size() != f.dim)
+  if (x_.size() != f_.dim)
     {
 	  cerr << "function incompatible with solver size" << endl; exit(1);
     }
 
-  if (x.size() != f.dim || step_size.size() != f.dim) 
+  if (x_.size() != f_.dim || step_size.size() != f_.dim) 
     {
 	  cerr << "vector length not compatible with function" << endl; exit(1);
     }  
     
-  s.f = &f;
+  f = &f_;
 
-  (s.x) = (x); 
+  x = x_; 
   
-  return s.type.set(s.state, s.f, s.x, &(s.size), step_size);
+  return type.set(state, f, x, &(size), step_size);
 }
 
-int
-gsl_multimin_fminimizer_iterate (gsl_multimin_fminimizer &s)
+template <typename S> int gsl_multimin_fminimizer<S>::iterate ()
 {
-  return s.type.iterate(s.state, s.f, s.x, &(s.size), &(s.fval));
+  return type.iterate(state, f, x, &(size), &(fval));
 }
 
-double
-gsl_multimin_fminimizer_size (gsl_multimin_fminimizer &s)
-{
-  return s.size;
-}
 
+
+//Test for convergence
 int
 gsl_multimin_test_size (const double size, double epsabs)
 {
@@ -212,18 +189,19 @@ gsl_multimin_test_size (const double size, double epsabs)
   return MYGSL_CONTINUE;
 }
 
-
-
+///////////////////////////////////////
+//Functions that do the minimization!//
+///////////////////////////////////////
 static int
 compute_center (const nmsimplex_state_t &state, vector<double> &center);
 static double
 compute_size (nmsimplex_state_t &state, vector<double> &center);
 
-static double
+template <typename S> static double
 try_corner_move (const double coeff,
 		 const nmsimplex_state_t &state,
 		 size_t corner,
-		 vector<double> &xc, FuncNd *f)
+		 vector<double> &xc, FuncNd<S> *f)
 {
   /* moves a simplex corner scaled by coeff (negative value represents 
      mirroring by the middle point of the "other" corner points)
@@ -286,9 +264,9 @@ update_point (nmsimplex_state_t &state, size_t i,
   state.y1[i] = val;  
 }
 
-static int
+template <typename S> static int
 contract_by_best (nmsimplex_state_t &state, size_t best,
-		  vector<double> &xc, FuncNd *f)
+		  vector<double> &xc, FuncNd<S> *f)
 {
 
   /* Function contracts the simplex in respect to best valued
@@ -387,8 +365,12 @@ compute_size (nmsimplex_state_t &state, vector<double> &center)
   return sqrt (ss / P);
 }
 
-int
-gsl_multimin_fminimizer_type::alloc (nmsimplex_state_t &state, size_t n)
+
+///////////////////////////////////////////
+//  gsl_multimin_fminimizer_type methods //
+///////////////////////////////////////////
+template <typename S> int
+gsl_multimin_fminimizer_type<S>::alloc (nmsimplex_state_t &state, size_t n)
 {
   //nmsimplex_state_t *state = (nmsimplex_state_t *) vstate;
 
@@ -410,8 +392,8 @@ gsl_multimin_fminimizer_type::alloc (nmsimplex_state_t &state, size_t n)
   return MYGSL_SUCCESS;
 }
 
-int
-gsl_multimin_fminimizer_type::set (nmsimplex_state_t &state, FuncNd *f,
+template <typename S> int
+gsl_multimin_fminimizer_type<S>::set (nmsimplex_state_t &state, FuncNd<S> *f,
 	       vector<double> &x,
 	       double *size, vector<double> &step_size)
 {
@@ -476,8 +458,8 @@ gsl_multimin_fminimizer_type::set (nmsimplex_state_t &state, FuncNd *f,
   return MYGSL_SUCCESS;
 }
 
-int
-gsl_multimin_fminimizer_type::iterate (nmsimplex_state_t &state, FuncNd *f,
+template <typename S> int
+gsl_multimin_fminimizer_type<S>::iterate (nmsimplex_state_t &state, FuncNd<S> *f,
 		   vector<double> &x, double *size, double *fval)
 {
 
@@ -612,7 +594,7 @@ gsl_multimin_fminimizer_type::iterate (nmsimplex_state_t &state, FuncNd *f,
   return MYGSL_SUCCESS;
 }
 
-static const gsl_multimin_fminimizer_type nmsimplex_type = 
+/*static const gsl_multimin_fminimizer_type nmsimplex_type = 
 { //"nmsimplex2",	//name 
   //sizeof (nmsimplex_state_t),
   //&nmsimplex_alloc,
@@ -620,9 +602,9 @@ static const gsl_multimin_fminimizer_type nmsimplex_type =
   //&nmsimplex_iterate,
 };
 
-gsl_multimin_fminimizer_type gsl_multimin_fminimizer_nmsimplex2 = nmsimplex_type;
+gsl_multimin_fminimizer_type gsl_multimin_fminimizer_nmsimplex2 = nmsimplex_type;*/
 
-fit_params simplex(vector<double> &x, int max_iter, double eps, FuncNd &f){
+template <typename S> fit_params simplex(vector<double> &x, int max_iter, double eps, FuncNd<S> &f){
 	
   fit_params fp;
   fp.root = 0; //not used
@@ -630,27 +612,26 @@ fit_params simplex(vector<double> &x, int max_iter, double eps, FuncNd &f){
   
   int status;
   
-  gsl_multimin_fminimizer_type T = 
-    gsl_multimin_fminimizer_nmsimplex2;
-  gsl_multimin_fminimizer s;// = NULL;
+  gsl_multimin_fminimizer_type<S> T;
+  // = NULL;
 
 
   // Set initial step sizes to 1 
   vector<double> ss( x.size() , 1.0 );
 
   // Initialize method and iterate 
-  s = gsl_multimin_fminimizer_alloc (T, f.dim);
-  gsl_multimin_fminimizer_set (s, f, x, ss);
+  gsl_multimin_fminimizer<S> s(T, f.dim);
+  s.set (f, x, ss);
 
   do
     {
       fp.iter++;
-      status = gsl_multimin_fminimizer_iterate(s);
+      status = s.iterate();
          
       if (status) 
         break;
 
-      fp.residual = gsl_multimin_fminimizer_size (s);
+      fp.residual = s.size; //gsl_multimin_fminimizer_size (s);
       status = gsl_multimin_test_size (fp.residual, eps);
       
       
@@ -671,4 +652,6 @@ fit_params simplex(vector<double> &x, int max_iter, double eps, FuncNd &f){
   fp.mroot = s.x;
 
   return fp;
+}
+
 }

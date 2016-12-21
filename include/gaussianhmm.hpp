@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+	
 //HMM with gaussian emission
 //prob( Emit O | state i ) = ( 1 / sigma sqrt(2 pi) )  exp( -(O - mu)*(O - mu)/2sigma^2 ) 
 //mu_i = B[i][0]
@@ -107,3 +109,4 @@ vector<double> log_factor;
 	
 };
 
+}

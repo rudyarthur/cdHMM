@@ -6,6 +6,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+	
 //HMM with gumbel emission
 //prob( Emit O | state i ) = ( 1 / sigma )  exp( -(O - mu)/sigma - exp( - (O - mu)/sigma ) ) 
 //mu_i = B[i][0]
@@ -101,3 +103,4 @@ public:
 	
 };
 
+}

@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 //HMM with exponential emission
 //prob( Emit O | state i ) = lambda exp( -lambda_i O ) 
 //lambda_i = B[i][0]
@@ -98,3 +100,4 @@ public:
 	
 };
 
+}

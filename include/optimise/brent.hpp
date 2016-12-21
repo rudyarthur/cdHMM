@@ -29,9 +29,10 @@ using namespace std;
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
+namespace cdHMM {
 
 /* brent.c -- brent root finding algorithm */
-fit_params brent(vector<double> &x, int max_iter, double eps, Func1d &f){
+template <typename T> fit_params brent(vector<double> &x, int max_iter, double eps, Func1d<T> &f){
 
   fit_params fp;
   fp.mroot.resize(0); //not used
@@ -39,18 +40,18 @@ fit_params brent(vector<double> &x, int max_iter, double eps, Func1d &f){
   double a, b, c, d, e;
   double fa, fb, fc;
 
-  fp.root = 0.5 * (x[0] + x[1]) ;
+  fp.root = 0.5 * (double)(x[0] + x[1]) ;
 
-  a = x[0];
+  a = (double)x[0];
   fa = f.eval(a);
   
-  b = x[1];
+  b = (double)x[1];
   fb = f.eval(b);
 
   c = b;
   fc = fb;
 
-  d = x[1] - x[0] ;
+  d = (double)(x[1] - x[0]);
   e = d;
 
   if ((fa < 0.0 && fb < 0.0) || (fa > 0.0 && fb > 0.0))
@@ -109,13 +110,13 @@ fit_params brent(vector<double> &x, int max_iter, double eps, Func1d &f){
 
       if (b < c) 
         {
-          x[0] = b;
-          x[1] = c;
+          x[0] = (double)b;
+          x[1] = (double)c;
         }
       else
         {
-          x[0] = c;
-          x[1] = b;
+          x[0] = (double)c;
+          x[1] = (double)b;
         }
       fp.residual = m;
       return fp;
@@ -196,19 +197,21 @@ fit_params brent(vector<double> &x, int max_iter, double eps, Func1d &f){
 
   if (b < tc)
     {
-      x[0] = b;
-      x[1] = tc;
+      x[0] = (double)b;
+      x[1] = (double)tc;
     }
   else
     {
-      x[0] = tc;
-      x[1] = b;
+      x[0] = (double)tc;
+      x[1] = (double)b;
     }
-    fp.residual = fabs(x[1] - x[0]);
-    more = !(fp.residual < eps * min( fabs(x[0]), fabs(x[1]) ));
+    fp.residual = (double)fabs(x[1] - x[0]);
+    more = !(fp.residual < eps * (double)min( fabs(x[0]), fabs(x[1]) ));
     ++fp.iter;
        
   } while (more && fp.iter < max_iter);
 
   return fp;
+}
+
 }

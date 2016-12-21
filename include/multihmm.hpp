@@ -5,6 +5,7 @@
 
 using namespace std;
 
+namespace cdHMM {
 
 //HMM with two emission types
 template <typename obs_type> class multiHMM : public HMM<obs_type> {
@@ -174,3 +175,4 @@ bool setup;
 	
 };
 
+}

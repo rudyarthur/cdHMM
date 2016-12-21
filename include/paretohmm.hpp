@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 //HMM with exponential emission
 //prob( Emit O | state i ) = a xm^a / x^(a+1) x > xm else 0
 //xm_i = lb[i]
@@ -94,3 +96,4 @@ vector<double> lb;
 	
 };
 
+}

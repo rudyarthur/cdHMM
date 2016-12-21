@@ -6,7 +6,9 @@
 
 using namespace std;
 
-class GEV : public FuncNd{
+namespace cdHMM {
+
+template <typename S> class GEV : public FuncNd<S>{
 public:
 	
 	GEV(){ 
@@ -19,16 +21,16 @@ public:
 		  double sigma = v[1]; 
 		  double k = v[2]; 
 		  
-		  int T = wp.O->size();
-		  int i = wp.i;
+		  int T = this->wp.O->size();
+		  int i = this->wp.i;
 		  
-		  vector<double> a(T); for(int t=0; t<T; ++t){ a[t] = ( (*wp.O)[t] - mu)/sigma; } //a = (x-m)/s
+		  vector<double> a(T); for(int t=0; t<T; ++t){ a[t] = ( (double)(*this->wp.O)[t] - mu)/sigma; } //a = (x-m)/s
 		  vector<double> k_terms;
 		  
 		  double nlogL = 0;
 		  if(k == 0){ //gumbel case
 			for(int t=0; t<T; ++t){ 
-				nlogL += (exp(-a[t]) + a[t] + log(sigma))* (*wp.gamma)[i][t]; 
+				nlogL += (exp(-a[t]) + a[t] + log(sigma))* (*this->wp.gamma)[i][t]; 
 			}
 		  } else {
 			vector<double> aa(T); //aa = k(x-m)/s
@@ -61,24 +63,24 @@ public:
 			  }
 			  //a[t] (k+1) k_terms[t] = k(x-m)/s
 			  for(int t=0; t<T; ++t){ 
-				  nlogL += (exp( - a[t] * k_terms[t] ) + a[t] * (k+1) * k_terms[t] + log(sigma))* (*wp.gamma)[i][t]; 
+				  nlogL += (exp( - a[t] * k_terms[t] ) + a[t] * (k+1) * k_terms[t] + log(sigma))* (*this->wp.gamma)[i][t]; 
 			  }
 			} else {
 			  vector<double> b(T); for(int t=0; t<T; ++t){ b[t] = 1 + aa[t]; if(b[t] <= 0 ){ return 1e200; } } //b = 1 + k(x-m)/s
 			  for(int t=0; t<T; ++t){ 
-				  nlogL += (pow( b[t], -1/k ) + (1+1/k) * log(b[t]) + log(sigma))* (*wp.gamma)[i][t]; 
+				  nlogL += (pow( b[t], -1/k ) + (1+1/k) * log(b[t]) + log(sigma))* (*this->wp.gamma)[i][t]; 
 			  }
 			}
 		  }
-		  return nlogL/(*wp.sumgamma)[i];
+		  return nlogL/(*this->wp.sumgamma)[i];
 	}
 
 };
 
-fit_params extreme_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
+template<typename T> fit_params extreme_solve(vector<T> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
 max_lhood_params mlp){
 	
-	GEV my_f;
+	GEV<T> my_f;
 	my_f.wp.O = &O;
 	my_f.wp.gamma = &gamma;
 	my_f.wp.sumgamma = &sumgamma;
@@ -86,5 +88,7 @@ max_lhood_params mlp){
 	
 
 	return simplex(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
+
+}
 
 }

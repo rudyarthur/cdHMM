@@ -6,6 +6,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 //HMM with weibull emission
 //prob( Emit O | state i ) = ( k / lambda ) ( O / lambda )^(k-1)  exp( -(O / lambda )^k ) 
 //k_i = B[i][0]
@@ -102,3 +104,4 @@ public:
 	
 };
 
+}

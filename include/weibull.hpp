@@ -6,7 +6,9 @@
 
 using namespace std;
 
-class Weibull : public Func1d{
+namespace cdHMM {
+
+template <typename S> class Weibull : public Func1d<S>{
 public:
 	
 	Weibull(){ 
@@ -17,8 +19,8 @@ public:
 			
 		  double ElnO = 0;
 		  double EOk = 0;
-		  int T = wp.O->size();
-		  int i = wp.i;
+		  int T = this->wp.O->size();
+		  int i = this->wp.i;
 		  int t = 0;
 		  
 		  vector<double> vlOk(T);
@@ -26,17 +28,17 @@ public:
 
 		  for(int t=0; t<T; ++t){ 
 			  
-			  double lO = log( (*wp.O) [t] );
+			  double lO = log( (double)(*this->wp.O) [t] );
 			  
-			  ElnO += ( (*wp.gamma)[i][t] * lO ); //E[ lnO ]
+			  ElnO += ( (*this->wp.gamma)[i][t] * lO ); //E[ lnO ]
 
-			  double lg = log( (*wp.gamma)[i][t] );
+			  double lg = log( (*this->wp.gamma)[i][t] );
 			  vlOk[t] = lg + k*lO;	//log( gamma_t O^k )
 			  if(t == 0){ EOk = vlOk[t]; } else { lsum(EOk, vlOk[t]); } //log( E(O^k) ) 
 			  vlnO[t] = lO;			//log(O);
 			  
 		  }
-		  ElnO /= ( (*wp.sumgamma)[i] ); //E[ lnO ]
+		  ElnO /= ( (*this->wp.sumgamma)[i] ); //E[ lnO ]
 		  
 		  pair<int, double> EOklnO = safe_log_sum(vlnO, vlOk);
 		  //1/k = -E[ ln O ] + E[ O^k ln O ]/E[ O^k ]
@@ -45,10 +47,10 @@ public:
 
 };
 
-fit_params weibull_solve(vector<double> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
+template <typename T> fit_params weibull_solve(vector<T> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
 max_lhood_params mlp){
 	
-	Weibull my_f;
+	Weibull<T> my_f;
 	my_f.wp.O = &O;
 	my_f.wp.gamma = &gamma;
 	my_f.wp.sumgamma = &sumgamma;
@@ -57,4 +59,6 @@ max_lhood_params mlp){
 	return brent(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
 
 	
+}
+
 }

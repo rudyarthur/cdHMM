@@ -21,6 +21,8 @@ using namespace std;
 
 #define EULER_MASCHERONI 0.57721566490153286060651209008240243104215933593992
 
+namespace cdHMM {
+
 struct max_lhood_params {
 	
 	int dim;
@@ -126,3 +128,4 @@ pair<int, double> safe_log_sum(vector<double> &v, vector<double> &add){
     return make_pair(1,0); 
 }
 
+}

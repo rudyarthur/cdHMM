@@ -8,7 +8,9 @@
 
 using namespace std;
 
-class PsiGamma : public Func1d{
+namespace cdHMM {
+
+class PsiGamma : public Func1d<double>{
 public:
 	
 	PsiGamma(vector<double> &p){ 
@@ -33,4 +35,6 @@ fit_params gamma_solve(double pm, max_lhood_params mlp){
 	
 	return brent(mlp.x_start, mlp.max_iter, mlp.eps, my_f);
 	
+}
+
 }

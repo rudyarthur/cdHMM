@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+	
 //HMM with poisson emission
 //prob( Emit O | state i ) = exp( -lambda_i ) O^\lambda_i / O!
 //alpha_i = B[i][0]
@@ -93,3 +95,4 @@ public:
 	
 };
 
+}

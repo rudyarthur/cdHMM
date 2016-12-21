@@ -5,6 +5,8 @@
 
 using namespace std;
 
+namespace cdHMM {
+
 //HMM with laplace emission
 //prob( Emit O | state i ) = (1 / 2b ) exp( -|x - mu|/b )
 //mu_i = B[i][0]
@@ -92,3 +94,4 @@ public:
 	
 };
 
+}

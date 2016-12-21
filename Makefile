@@ -3,9 +3,7 @@ CXX=g++
 CXXFLAGS = -O3  -std=c++11
 CFLAGS = -O3  -std=c++11
 
-all: test
-
-IFLAGS = -I./include
+all: cline
 
 default: CXXFLAGS = -O3  -std=c++11
 default: CFLAGS = -O3  -std=c++11
@@ -19,10 +17,13 @@ profile: CXXFLAGS = -pg -O3 -std=c++11
 profile: CFLAGS =  -pg -O3 -std=c++11
 profile: all
 
+cline: hmm.cpp
+	$(CXX) $(CXXFLAGS) -o hmm hmm.cpp
+
 test: test.cpp 
-	#$(CXX) $(CXXFLAGS) -o test test.cpp $(IFLAGS)
-	$(CXX) $(CXXFLAGS) -o text_analysis text_analysis.cpp $(IFLAGS)
+	$(CXX) $(CXXFLAGS) -o test test.cpp
 clean:
+	rm hmm
 	rm test 
 	rm text_analysis
 
