@@ -10,20 +10,10 @@
 #include <limits>
 #include <math.h>
 #include <getopt.h>
-#include "gaussianhmm.hpp" 
-#include "exponentialhmm.hpp" 
-#include "gammahmm.hpp" 
-#include "lognormalhmm.hpp" 
-#include "paretohmm.hpp"
-#include "laplacehmm.hpp" 
-#include "discretehmm.hpp" 
-#include "poissonhmm.hpp" 
-#include "gumbelhmm.hpp" 
-#include "weibullhmm.hpp" 
-#include "extremevaluehmm.hpp" 
-#include "multihmm.hpp" 
+#include "cdhmm.hpp" 
 
 using namespace std;
+using namespace cdHMM;
 
 template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A, vector<vector<double> > &B, vector<double> &pi){
 	int N = hmm->N;
@@ -250,7 +240,7 @@ int main(int argc,char **argv){
 		pi[0] = 0.6; pi[1] = 0.4;
 		
 		paretoHMM<double> hmm(N,0,hmm_max_iters);
-		cerr << "lower bound!" << endl; hmm.lb[0] = 1; hmm.lb[1] = 1;
+		cerr << "lower bounds = " << hmm.lb[0] << " " << hmm.lb[1] << endl; 
 		
 		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
@@ -293,12 +283,12 @@ int main(int argc,char **argv){
 		A[1][0] = 0.1; A[1][1] = 0.9;
 
 		B[0][0] = 0.8; B[0][1] = 0.2; 
-		B[1][0] = 0.4; B[1][1] = 0.6; 
+		B[1][0] = 0.2; B[1][1] = 0.8; 
 		
 		pi[0] = 0.6; pi[1] = 0.4;
 		
-		multinomialHMM<int> hmm(N,M,0,hmm_max_iters); 
-		run_hmm(&hmm,  A, B, pi, 10000, 1e-2, 10);
+		discreteHMM<int> hmm(N,M,0,hmm_max_iters); 
+		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
 
 	}
 	//Poisson emission
@@ -420,12 +410,8 @@ int main(int argc,char **argv){
 
 		
 		vector<vector<double> > Bexp(1, vector<double>(1));
-		//Bexp[0][0] = B[0][0];  
 		vector<vector<double> > Blognorm(1, vector<double>(2));
-		//Blognorm[0][0] = B[1][0]; Blognorm[0][1] = B[1][1]; 
 		vector<vector<double> > Bnorm(1, vector<double>(2));
-		//Bnorm[0][0] = B[2][0]; Bnorm[0][1] = B[2][1]; 
-
 			
 	
 		exponentialHMM<double> hmm_exp(1,0,hmm_max_iters); hmm_exp.B = Bexp;
