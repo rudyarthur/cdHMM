@@ -9,12 +9,11 @@ namespace cdHMM {
 
 //HMM with exponential emission
 //prob( Emit O | state i ) = a xm^a / x^(a+1) x > xm else 0
-//xm_i = lb[i]
+//xm_i = this->lb[i]
 //a_i = B[i][0]
 template <typename obs_type> class paretoHMM : public HMM<obs_type> {
 public:
 
-vector<double> lb;
 
 	//Default
 	paretoHMM(){
@@ -28,16 +27,16 @@ vector<double> lb;
 	paretoHMM(int N_, int min_, int max_){
 		this->setsize(N_,1);
 		this->setIters(min_,max_);
-		lb = vector<double>(N_,0);
+		this->lb = vector<double>(N_,0);
 		
 		this->type = "Pareto";
 	}
 	
 	void info(){
 		cerr << this->type << " HMM" << endl;
-		cerr << "prob( Emit O | state=i ) = a_i lb_i^a_i / O^(a_i+1) if O > lb_i else 0\n";
+		cerr << "prob( Emit O | state=i ) = a_i this->lb_i^a_i / O^(a_i+1) if O > this->lb_i else 0\n";
 		cerr << "a_i = B[i][0]\n";
-		cerr << "lb_i is fixed by user. Default is 0." << endl;
+		cerr << "this->lb_i is fixed by user. Default is 0." << endl;
 	}
 	
 	void initB(){
@@ -49,10 +48,10 @@ vector<double> lb;
 	
 	
 	inline double pB(int i, obs_type O){
-		return (O < lb[i]) ? 0 : this->B[i][0] * pow( lb[i], this->B[i][0] ) / pow( O, this->B[i][0] + 1 );	
+		return (O < this->lb[i]) ? 0 : this->B[i][0] * pow( this->lb[i], this->B[i][0] ) / pow( O, this->B[i][0] + 1 );	
 	}
 	inline double log_pB(int i, obs_type O){
-		return (O < lb[i]) ? -numeric_limits<double>::infinity() : log( this->B[i][0] ) + this->B[i][0] * log( lb[i] ) - (this->B[i][0] + 1)*log( O );	
+		return (O < this->lb[i]) ? -numeric_limits<double>::infinity() : log( this->B[i][0] ) + this->B[i][0] * log( this->lb[i] ) - (this->B[i][0] + 1)*log( O );	
 	}
 	
 	//re-estimate B from model
@@ -67,7 +66,7 @@ vector<double> lb;
 
 			double av = 0;
 			for(int t=0; t<O.size(); ++t){
-				av += (this->logO[t] - log(lb[i])) * this->gamma[i][t];
+				av += (this->logO[t] - log(this->lb[i])) * this->gamma[i][t];
 			}
 			this->B[i][0] = this->sumgamma[i]/av;
 
@@ -88,7 +87,7 @@ vector<double> lb;
 
 	obs_type gen_obs(int state){
 		exponential_distribution<double> b_dist(this->B[state][0]); 
-		return lb[state] * exp( b_dist(this->generator) );
+		return this->lb[state] * exp( b_dist(this->generator) );
 	}
 	
 	

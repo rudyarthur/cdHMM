@@ -240,6 +240,7 @@ int main(int argc,char **argv){
 		pi[0] = 0.6; pi[1] = 0.4;
 		
 		paretoHMM<double> hmm(N,0,hmm_max_iters);
+		hmm.lb[0] = 1; hmm.lb[1] = 1;
 		cerr << "lower bounds = " << hmm.lb[0] << " " << hmm.lb[1] << endl; 
 		
 		run_hmm(&hmm,  A, B, pi, 10000, 1e-5, 10);
