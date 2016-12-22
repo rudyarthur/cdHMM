@@ -1,7 +1,7 @@
 # cdHMM
 Continuous and Discrete Hidden Markov Models
 
-cdHMM is (yet another) C++ library for Hidden Markov Models (HMMs). The nice feature of cdHMM is that it allows both different emission models for each hidden state. For example one can have a two state model where observations are distributed like a Gaussian in one state and like a power law in the other.
+cdHMM is (yet another) C++ library for Hidden Markov Models (HMMs). The nice feature of cdHMM is that it allows different emission models for each hidden state. For example one can have a two state model where observations are distributed like a Gaussian in one state and like a power law in the other.
 
 cdHMM can be used as a header only library or there is a commandline utility that wraps some of the functionality.
 
