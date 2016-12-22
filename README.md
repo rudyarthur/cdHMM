@@ -56,7 +56,7 @@ The most useful HMM functions are
 * `hmm.init()`: puts hmm object in ready state to fit data
 * `hmm.fit(data, eps)`: Uses EM algorithm to fit transition & emission probabilities
 * `hmm.set_state_viterbi(data)`: Uses Viterbi algorithm to calculate most likely state sequence.
-* `hmm.generate_seq(O, num, true)`: Generate num synthethic data points from hmm, save in O and also output to console.
+* `hmm.generate_seq(O, num, true)`: Generate `num` synthethic data points from `hmm`, save in `O` and also output to console.
 
 And public data members 
 
