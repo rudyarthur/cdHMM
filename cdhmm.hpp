@@ -20,7 +20,14 @@ namespace cdHMM {
 
 template <typename T> class HMMFactory {
 public:
-	static HMM<T>* generateHMM(string name, int N, int min_iter, int max_iter, int M=-1){
+/*!
+* Create hmm object
+* @param[in] name HMM type
+* @param[in] N number of HMM states
+* @param[in] min_iter minimum number of HMM iterations
+* @param[in] max_iter maximum number of HMM iterations
+* @param[in] M number number of HMM emission parameters
+*/ 	static HMM<T>* generateHMM(string name, int N, int min_iter, int max_iter, int M=-1){
 	
 		string lname = name;
 		transform(lname.begin(), lname.end(), lname.begin(), ::tolower);    

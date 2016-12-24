@@ -7,10 +7,10 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with laplace emission
-//prob( Emit O | state i ) = (1 / 2b ) exp( -|x - mu|/b )
-//mu_i = B[i][0]
-//b_i = B[i][1]
+/*! HMM with laplace emission \n
+//prob( Emit O | state i ) = (1 / 2b ) exp( -|x - mu|/b ) \n
+//mu_i = B[i][0] \n
+//b_i = B[i][1]*/
 template <typename obs_type> class laplaceHMM : public HMM<obs_type> {
 public:
 

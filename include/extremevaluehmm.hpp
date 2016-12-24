@@ -8,20 +8,20 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with GEV emission
-//prob( Emit O | state i ) = (1/sigma) * t^(kappa - 1) exp( - t )
-//t = ( 1 - kappa ((O - mu)/sigma) )^1/kappa
-//if kappa = 0: t = exp( -(O - mu)/sigma )
-//wikipedia notation
-//kappa = -xi
-//mu_i = B[i][0]
-//sigma_i = B[i][1]
-//kappa_i = B[i][2]
+/*! HMM with GEV emission \n
+//prob( Emit O | state i ) = (1/sigma) * t^(kappa - 1) exp( - t ) \n
+//t = ( 1 - kappa ((O - mu)/sigma) )^1/kappa \n
+//if kappa = 0: t = exp( -(O - mu)/sigma ) \n
+//wikipedia notation \n
+//kappa = -xi \n
+//mu_i = B[i][0] \n
+//sigma_i = B[i][1] \n
+//kappa_i = B[i][2]*/
 template <typename obs_type> class extremevalueHMM : public HMM<obs_type> {
+protected:
+	double logsmall;
+
 public:
-
-double logsmall;
-
 	//Default
 	extremevalueHMM(){
 		this->setsize(0,3);

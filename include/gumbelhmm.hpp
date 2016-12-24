@@ -8,10 +8,10 @@ using namespace std;
 
 namespace cdHMM {
 	
-//HMM with gumbel emission
-//prob( Emit O | state i ) = ( 1 / sigma )  exp( -(O - mu)/sigma - exp( - (O - mu)/sigma ) ) 
-//mu_i = B[i][0]
-//sigma_i = B[i][1]
+/*! HMM with gumbel emission \n
+//prob( Emit O | state i ) = ( 1 / sigma )  exp( -(O - mu)/sigma - exp( - (O - mu)/sigma ) ) \n 
+//mu_i = B[i][0] \n
+//sigma_i = B[i][1]*/
 template <typename obs_type> class gumbelHMM : public HMM<obs_type> {
 public:
 

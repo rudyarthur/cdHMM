@@ -7,9 +7,9 @@ using namespace std;
 
 namespace cdHMM {
 	
-//HMM with poisson emission
-//prob( Emit O | state i ) = exp( -lambda_i ) O^\lambda_i / O!
-//alpha_i = B[i][0]
+/*! HMM with poisson emission \n
+//prob( Emit O | state i ) = exp( -lambda_i ) O^\lambda_i / O! \n
+//alpha_i = B[i][0]*/
 template <typename obs_type> class poissonHMM : public HMM<obs_type> {
 public:
 

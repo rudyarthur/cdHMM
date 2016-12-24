@@ -7,14 +7,15 @@
 using namespace std;
 
 namespace cdHMM {
-
+/*!
+ * Gumbel probability density function
+ * */
 template <typename S> class Gumbel : public Func1d<S>{
 public:
 	
-	Gumbel(){ 
-		this->dim = 1;
-	}
-	
+/*!
+ * Evaluate Gumbel probability density function
+ * */
 	double eval(double b){
 			
 		  double av = 0;
@@ -64,7 +65,9 @@ public:
 	}
 
 };
-
+/*!
+ * Max likelihood estimate of Gumbel distribution parameters given observation and model weights
+ * */
 template <typename T> fit_params gumbel_solve(vector<T> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
 max_lhood_params mlp){
 	

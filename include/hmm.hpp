@@ -6,74 +6,186 @@ using namespace std;
 
 namespace cdHMM {
 
+template <typename obs_type> class multiHMM; //forward declaration so hmm members can access protected
+
 template <typename obs_type> class HMM{
+friend class multiHMM<obs_type>;
 public:
 
-	int M;
-	int N;
-	int T;
-	int maxIters;
-	int minIters;
-	
-	bool print_iter;
+	int M; /*!< Number of emission model parameters */
+	int N; /*!< Number of Hidden States */
+	int T; /*!< Number of Observations */
+	int maxIters; /*!< maximum allowed number of EM iterations */
+	int minIters; /*!< minimum allowed number of EM iterations */
+	 
+	bool print_iter; /*!< Show Likelihood info every EM iteration */
 	
 	//fix all or some of the transition/emission/starting probabilities
-	bool fixA; vector<bool> fixArow;
-	bool fixB; vector<bool> fixBrow;
-	bool fixpi; vector<bool> fixpirow;
+	bool fixA; 			/*!< Fix all values of transmission matrix A*/
+	vector<bool> fixArow;	/*!< Fix values of transmission matrix A where element == true*/
+	bool fixB; 				/*!< Fix all values of emission matrix B*/
+	vector<bool> fixBrow;	/*!< Fix values of emission matrix B where element == true*/
+	bool fixpi; 			/*!< Fix all values of starting vector pi*/
+	vector<bool> fixpirow;	/*!< Fix values of starting vector pi where element == true*/
 	
-	default_random_engine generator;
+	default_random_engine generator; /*!< Random number generator */
 
 	//Type of emission model
-	string type;
-	
-	//Parameters
-	vector< vector<double> > A, B;
-	vector<double> pi;
+	string type;				/*!< Model type ID string*/
 
 	//Best Parameters
-	vector< vector<double> > maxA, maxB;
-	vector<double> maxpi;
-	double maxlhood;
-		
-	//Parameters
-	vector< vector<double> > logA, logB;
-	vector<double> logpi;
-	
+	vector< vector<double> > maxA; /*!< Most likely transmission matrix */ 
+	vector< vector<double> > maxB; /*!< Most likely emission matrix */ 
+	vector<double> maxpi;			/*!< Most likely starting vector */ 
+	double maxlhood;				/*!< Max likelihood  */ 
+
 	//best state sequence
-	vector<unsigned> state;
+	vector<unsigned> state;		/*!< Most likely state sequence */ 
+
+
+protected:	
+	//Parameters
+	vector< vector<double> > A; /*!< Transmission matrix */ 
+	vector< vector<double> > B; /*!< Emission matrix */
+	vector<double> pi;			/*!< Starting vector */
+		
+	vector< vector<double> > logA; /*!< Log transmission matrix */ 
+	vector< vector<double> > logB; /*!< Log emission matrix */ 
+	vector<double> logpi;			/*!< Log starting vector */ 
 
 	//Forward-Backward variables
-	vector< vector<double> > alpha, beta, gamma;	//Baum-Welch variables
-	vector< vector<double> > delta, delta2; //Viterbi variables
-	vector< double > sumgamma, c, sumgammap; //sumgammap = sumgamma - last term
-	vector< vector< vector<double> > > digamma;
+	vector< vector<double> > alpha;	/*!< Baum-Welch forward probability */
+	vector< vector<double> > beta;	/*!< Baum-Welch backward probability */
+	vector< vector<double> > gamma;	/*!< Baum-Welch lhood at t */
+	vector< vector<double> > delta; /*!< Viterbi lhood at t*/
+	vector< vector<double> > delta2; /*!< Viterbi bookkeeping*/
+	vector< double > sumgamma; /*!< Baum-Welch normalization */
+	vector< double > sumgammap; /*!< Baum-Welch sumgammap = sumgamma - last term */
+	vector< double > c; /*!< Baum-Welch forward-backward normalization */
+	vector< vector< vector<double> > > digamma; /*!<  Baum-Welch i,j transmission at t */
 
 	//model likelihood
-	double lhood;
+	double lhood;	/*!<  Model likelihood */
 	
 	//log of observations
-	bool set_logO;
-	bool no_logO;
-	vector<double> logO;
+	bool set_logO;	/*!<  Already calculated log of observations */
+	bool no_logO;   /*!<  Cannot calculate log of observations */
+	vector<double> logO;	/*!< Log of observations */
 
 	//Some distributions are bounded below
-	vector<double> lb;
-
-	//Some distributions need to get max likelihood parameters numerically
-	max_lhood_params mlp;
+	vector<double> lb;	/*!<  Emission lower bound */
 	
-	//So generic HMM has a setB method without needing to reimplement it in ecery realization
-	virtual void setB(vector<vector<double> > &inB){ B = inB; }
+	max_lhood_params mlp; /*!<  Parameters for max likelihood estimate solvers */
 
-	//Initialize Num states = N and num observations = M
-	void setsize(int N_, int M_){
+public:
+/*!
+ * Sets emission distribution lower bound (if applicable),
+ * @param[in]  in_lb  The vector of lower bounds (one per hidden state).
+ */ void set_lower_bound(vector<double> &in_lb){ lb = in_lb; }
+/*!
+ * Sets max likelihood parameter estimate precision 
+ * @param[in]  eps solver precision.
+ */	void set_optimise_precision(double eps){ mlp.eps = eps; }
+/*!
+ * Sets max likelihood parameter estimate pmax iteration 
+ * @param[in]  max_iter solver max iteration count.
+ */ void set_optimise_max_iter(double max_iter){ mlp.max_iter = max_iter; }
+/*!
+ * Sets max likelihood parameter estimate starting vector 
+ * @param[in]  start solver starting point.
+ */ void set_optimise_start(vector<double> start){ mlp.x_start = start; }
+	
+	
+/*!
+ * Sets transmission matrix A 
+ * @param[in]  inA Transmission matrix A.
+ */	void setA(vector<vector<double> > &inA){ 
+		if( inA.size() != N ){ cerr << "Setting A with mis-sized vector" << endl; exit(1); }
+		for(int i=0; i<N; ++i){
+			if( inA[i].size() != N ){ cerr << "Setting A with mis-sized vector " << endl; exit(1); }
+		}
+		A = inA; 
+    }
+/*!
+ * Gets transmission matrix A 
+ */ vector< vector<double> > getA(){ return A; }
+/*!
+ * Gets max lhood transmission matrix A 
+ */ vector< vector<double> > getmaxA(){ return maxA; }
+ //Virtual so that generic HMM has a setB but can overwrite in multiHMM
+/*!
+ * Sets emission matrix B
+ * @param[in]  inB Emission matrix B.
+ */ virtual void setB(vector<vector<double> > &inB){ 
+		if( inB.size() != N ){ cerr << "Setting B with mis-sized vector" << endl; exit(1); }
+		for(int i=0; i<N; ++i){
+			if( inB[i].size() != M ){ cerr << "Setting B with mis-sized vector " << endl; exit(1); }
+		}
+		B = inB; 
+	}
+/*!
+ * Gets emission matrix B
+ */vector< vector<double> > getB(){ return B; }
+/*!
+ * Gets max lhood emission matrix A 
+ */vector< vector<double> > getmaxB(){ return maxB; }
+    
+/*!
+ * Sets starting vector pi
+ * @param[in]  starting vector inpi.
+ */	void setpi( vector<double> &inpi){ 
+		if( inpi.size() != N ){ cerr << "Setting A with mis-sized vector" << endl; exit(1); }
+		pi = inpi; 
+	}
+/*!
+ * Gets starting vector pi
+ */    vector<double> getpi(){ return pi; }
+/*!
+ * Gets max lhood starting vector pi 
+ */    vector<double> getmaxpi(){ return maxpi; }
+    
+//set current params to best params
+/*!
+ * Set current transmission, emission and starting vector to max lhood values.
+ */ void set_to_max(){
+		A = maxA;
+		B = maxB;
+		pi = maxpi;
+		lhood = maxlhood;
+	}
+/*!
+ * Print info about this model to error console
+ */ virtual void info() = 0;
+	
+protected:
+/*!
+ * Initialize 
+ * @param[in] N_ Number of hidden states.
+ * @param[in] M_ Number of emission parameters.
+ */ void setsize(int N_, int M_){
 		M = M_;
 		N = N_;
+		
+		//fixing parameters
+		fixArow = vector<bool>(N, false);
+		fixBrow = vector<bool>(N, false);
+		fixpirow = vector<bool>(N, false);
+		
+		//parameters
+		A = vector< vector<double> >( N, vector<double>(N, 1 ) );
+		B = vector< vector<double> >( N, vector<double>(M, 1 ) );
+		pi = vector<double>(N, 1);
+		//log parameters
+		logA = vector< vector<double> >( N, vector<double>(N, 1 ) );
+		logB = vector< vector<double> >( N, vector<double>(M, 1 ) );
+		logpi = vector<double>(N, 1);
 	}
 	
-	//Set minimum double of iterations and maximum double
-	void setIters(int min_, int max_){
+/*!
+ * Set minimum and maximum iterations
+ * @param[in] min_ Min number EM iterations.
+ * @param[in] max_ Max number EM iterations.
+ */	void setIters(int min_, int max_){
 		maxIters = max_;
 		minIters = min_;
 		print_iter = false;
@@ -83,35 +195,52 @@ public:
 		mlp.x_start = {1e-10, 1e5};
 		mlp.eps=1e-5;
 		mlp.max_iter=1000;
+		//fixing parameters
+		fixA = false;
+		fixB = false;
+		fixpi = false;
+		//log obs info		
+		set_logO = false;
+		no_logO = false;
+		logO.resize(0);
 	}
 
-	virtual void info() = 0;
-	virtual void initB() = 0;
+/*!
+ * Initialise emission matrix
+ */ virtual void initB() = 0;
 		
-	void calc_logA(){
+/*!
+ * Calculate log of A
+ */	void calc_logA(){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<N; ++j){ logA[i][j] = log(A[i][j]);}
 		}
 	}
-	void calc_logB(){
+/*!
+ * Calculate log of B
+ */	void calc_logB(){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<M; ++j){ logB[i][j] = log(B[i][j]);}
 		}
 	}
-	void calc_logpi(){
+/*!
+ * Calculate log of pi
+ */	void calc_logpi(){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<N; ++j){ logpi[i] = log(pi[i]);}
 		}
 	}
-	void calc_logP(){
-		logA = vector< vector<double> >( N, vector<double>(N, 1 ) );
-		logB = vector< vector<double> >( N, vector<double>(M, 1 ) );
-		logpi = vector<double>(N, 1);
+/*!
+ * Calculate log of model params
+ */ void calc_logP(){
 		calc_logA();
 		calc_logB();
 		calc_logpi();
 	}
-	void calc_logO(vector<obs_type> &O){
+/*!
+ * Calculate log of the observation
+ * @param[in] O vector of observations.
+ */	void calc_logO(vector<obs_type> &O){
 		logO.resize( O.size() );
 		for(int i=0; i<O.size(); ++i){ 
 			if( O[i] <= 0 ){ 
@@ -123,24 +252,12 @@ public:
 		}
 		set_logO = true;
 	}
-	
+public:
 	//set A, B, pi to arbitrary initial values
-	void init(){	
-		fixA = false;
-		fixB = false;
-		fixpi = false;
+/*!
+ * Set parameters to random initial starting values
+ */ void init(){	
 		
-		fixArow = vector<bool>(N, false);
-		fixBrow = vector<bool>(N, false);
-		fixpirow = vector<bool>(N, false);
-		
-		set_logO = false;
-		no_logO = false;
-		logO.resize(0);
-		
-		A = vector< vector<double> >( N, vector<double>(N, 1 ) );
-		pi = vector<double>(N, 1);
-
 		double npi = 0;
 		for(unsigned i=0; i<N; ++i){
 			double norm = 0;
@@ -157,27 +274,40 @@ public:
 		initB();
 		
 		lhood = -numeric_limits<double>::infinity();
-		//don't zero maxA, maxB, ... , to retain between multiple restarts
 	
-
 		calc_logP();
 	}
 		
 	//Default
-	HMM(){
+/*!
+ * Default construction
+ */	HMM(){
 		setsize(0,0);
 		setIters(0,0);
 	}
 	
-	//Constructor
-	HMM(int N_, int M_, int min_, int max_){
+/*!
+ * Constructor
+ * @param[in] N_ number of hidden states
+ * @param[in] M_ number of emission parameters
+ * @param[in] min_ minimum number of EM iterations
+ * @param[in] max_ maximum number of EM iterations
+ */	HMM(int N_, int M_, int min_, int max_){
 		setsize(N_,M_);
 		setIters(min_,max_);
 	}
 	
-	//re-order states according to no_obs.second
-	void sortparams( vector< pair<double, int> > &no_obs, 
-	vector<vector<double> > &fA, vector<vector<double> > &fB, vector<double> &fpi ){
+protected:	
+/*!
+ * Re-order states according to no_obs.second
+ * @param[in] no_obs order vector.
+ * @param[in] fA Transmission matrix.
+ * @param[in] fB Emission matrix.
+ * @param[in] fpi Starting vector.
+ */ void sortparams( vector< pair<double, int> > &no_obs, 
+	vector<vector<double> > &fA, 
+	vector<vector<double> > &fB, 
+	vector<double> &fpi ){
 		
 		vector< vector<double> > At(N, vector<double>(N) );
 		vector< vector<double> > Bt(N, vector<double>(M) );
@@ -195,9 +325,11 @@ public:
 		fB = Bt;
 		fpi = pit;
 	}
-	
-	//re-order states so B[0][0] > B[1][0] > B[2][0] > ...
-	void sortparams(){ 
+public:
+
+/*!
+ * re-order states so B[0][0] > B[1][0] > B[2][0] > ...
+ */	void sortparams(){ 
 		
 		vector< pair<double, int> > no_obs(N);
 		for(int i=0; i<N; ++i){ 
@@ -216,10 +348,13 @@ public:
 			sortparams(no_obs, maxA, maxB, maxpi);
 		}
 	}
-
+protected:
 	
-	//reserve space for viterbi
-	inline void setup_delta(int T_){	
+
+/*!
+ * reserve space for viterbi
+ * @param[in] T number of observations
+ */ inline void setup_delta(int T_){	
 		T = T_;
 		delta = vector<vector<double> >(N, vector<double>(T,0)); 
 		delta2 = vector<vector<double> >(N, vector<double>(T,1));
@@ -227,8 +362,10 @@ public:
 		state = vector<unsigned>(T,0);
 	}
 	
-	//reserve space for HMM forward-backwards algorithm
-	inline void setup(int T_){	
+/*!
+ * reserve space for Baum-Welch
+ * @param[in] T number of observations
+ */	inline void setup(int T_){	
 		
 		T = T_;
 		
@@ -245,23 +382,31 @@ public:
 		c = vector<double>(T,0);
 		
 	}
-	
-	//reserve space for HMM forward-backwards algorithm
-	inline void setup(vector<obs_type> &O){	
+
+/*!
+ * reserve space for Baum-Welch
+ * @param[in] T vector of observations
+ */ inline void setup(vector<obs_type> &O){	
 		setup( O.size() );
 	}
+public:
+/*!
+* Probability of emitting O in state i
+@param[in] i HMM state
+@param[in] O observation
+*/ virtual double pB(int i, obs_type O) = 0;
+/*!
+* Log probability of emitting O in state i
+@param[in] i HMM state
+@param[in] O observation
+*/ 	virtual double log_pB(int i, obs_type O) = 0;	
 	
-	//probability of emitting O in state i
-	virtual double pB(int i, obs_type O) = 0;
-	//log probability of emitting O in state i
-	virtual double log_pB(int i, obs_type O) = 0;	
-	
-	
-	///////////////////
-	//	FB algorthm  //
-	///////////////////
-	//Initial probability
-	inline void compute_alpha0(obs_type O){
+protected:	
+
+/*!
+ * First forward probability
+ * @param[in] O observation
+ */inline void compute_alpha0(obs_type O){
 		c[0] = 0;
 		for(int i=0; i<N; ++i){
 			alpha[i][0] = pi[i] * pB(i,O); 
@@ -272,8 +417,11 @@ public:
 			alpha[i][0] *= c[0]; 
 		}
 	}
-	//Updates forward probabilities. assumes alpha is big enough! 
-	inline void update_alpha(obs_type O, int t){
+/*!
+ * Updates forward probabilities. assumes alpha is big enough! 
+ * @param[in] O observation
+ * @param[in] t time
+ */	inline void update_alpha(obs_type O, int t){
 		double sum = 0;
 		for(int i=0; i<N; ++i){
 			alpha[i][t] = alpha[0][t-1] * A[0][i]; 
@@ -286,13 +434,17 @@ public:
 		c[t] = 1.0/sum;
 		for(int i=0; i<N; ++i){ alpha[i][t] *= c[t]; }
 	}
-	//fill alpha from observation vector
-	inline void compute_alpha(vector<obs_type> &O){	
+/*!
+ * Fill alpha from observation vector
+ * @param[in] O observation
+ */	inline void compute_alpha(vector<obs_type> &O){	
 		compute_alpha0(O[0]); 
 		for(int t=1; t<T; ++t){ update_alpha(O[t], t);	} //exit(1);
 	}
-	//fill beta (backward probabilities) from observation vector	
-	inline void compute_beta(vector<obs_type> &O){
+/*!
+ * Fill beta (backward probabilities) from observation vector	
+ * @param[in] O observation
+ */	inline void compute_beta(vector<obs_type> &O){
 		for(int i=0; i<N; ++i){ beta[i][ T-1] = c[T-1];}
 		for(int t=T-1; t>0; --t){			
 			for(int i=0; i<N; ++i){
@@ -305,8 +457,10 @@ public:
 			}
 		}
 	}
-	//fill gamma and digamma (state probabilities) from observation vector	
-	inline void compute_gamma(vector<obs_type> &O){
+/*!
+ * fill gamma and digamma (state probabilities) from observation vector		
+ * @param[in] O observation
+ */	inline void compute_gamma(vector<obs_type> &O){
 		
 		double sden, sdenl;
 		for(int t=0; t<T-1; ++t){
@@ -338,9 +492,9 @@ public:
 		for(int i=0; i<N; ++i){ gamma[i][ T-1] /= sden; }
 		
 	}
-	
-	//compute gamma norm
-	inline void compute_sumgamma(){ 
+/*!
+ * compute gamma norm	
+ */	inline void compute_sumgamma(){ 
 		for(int i=0; i<N; ++i){
 			sumgamma[i] = 0;
 			for(int t=0; t<T; ++t){
@@ -348,17 +502,19 @@ public:
 			}
 		}
 	}
-	
-	//////////////////////////////////
-	//	FB algorithm (Log probs)	//
-	//////////////////////////////////
-	inline void compute_log_alpha0(obs_type O){
+/*!
+ * First log forward probability		
+ * @param[in] O observation
+ */	inline void compute_log_alpha0(obs_type O){
 		for(int i=0; i<N; ++i){
 			alpha[i][0] = logpi[i] + log_pB(i,O); 
 		}
 	}
-	
-	inline void update_log_alpha(obs_type O, int t){
+/*!
+ * Log forward probability		
+ * @param[in] O observation
+ * @param[in] t time
+ */	inline void update_log_alpha(obs_type O, int t){
 		double sum;
 		for(int i=0; i<N; ++i){
 			
@@ -369,14 +525,17 @@ public:
 			alpha[i][t] += log_pB(i,O); 
 		}
 	}
-
-	inline void compute_log_alpha(vector<obs_type> &O){	
+/*!
+ * fill forward log probabilities from observation vector		
+ * @param[in] O observation
+ */	inline void compute_log_alpha(vector<obs_type> &O){	
 		compute_log_alpha0(O[0]);  		
 		for(int t=1; t<T; ++t){ update_log_alpha(O[t], t);	} 
 	}
-	
-
-	inline void compute_log_beta(vector<obs_type> &O){
+/*!
+ * fill backwards log probabilities from observation vector		
+ * @param[in] O observation
+ */	inline void compute_log_beta(vector<obs_type> &O){
 		for(int i=0; i<N; ++i){ beta[i][ T-1] = 0; } 
 		
 		for(int t=T-1; t>0; --t){			
@@ -389,8 +548,10 @@ public:
 			}
 		}
 	}
-		
-	inline void compute_log_gamma(vector<obs_type> &O){
+/*!
+ * Fill state transition probabilities from observation vector	
+ * @param[in] O observation
+ */	inline void compute_log_gamma(vector<obs_type> &O){
 		
 		double sden, sdenl;
 		for(int t=0; t<T-1; ++t){
@@ -433,7 +594,9 @@ public:
 		
 	}
 	
-	inline void compute_log_sumgamma(){ 
+/*!
+ * Compute norm of transition probabilities
+ */	inline void compute_log_sumgamma(){ 
 		for(int i=0; i<N; ++i){
 			for(int t=0; t<T; ++t){
 				if( t==0 ){ sumgamma[i] = gamma[i][t]; } else { lsum(sumgamma[i] , gamma[i][t]); }
@@ -442,19 +605,20 @@ public:
 		}
 	}
 	
-	//////////////////////
-	//		re-estimate //
-	//////////////////////
+
 		
-	//re-estimate pi from model
-	inline void reestimate_pi(){
+/*!
+ * Reestimate starting vector	
+ */	inline void reestimate_pi(){
 		for(int i=0; i<N; ++i){ 
 			if( !fixpirow[i] ){
 				pi[i] = gamma[i][0]; 
 			}
 		}
 	}
-	inline void reestimate_log_pi(){
+/*!
+ * Reestimate log starting vector	
+ */	inline void reestimate_log_pi(){
 		for(int i=0; i<N; ++i){
 			if( !fixpirow[i] ){
 				pi[i] = exp(gamma[i][0]); 
@@ -463,8 +627,9 @@ public:
 		}
 	}
 	
-	//re-estimate A from model
-	inline void reestimate_A(){
+/*!
+ * Reestimate transition matrix
+ */	inline void reestimate_A(){
 		double sum = 0; 
 		for( int i=0; i<N; ++i ){ 
 			if( !fixArow[i] ){
@@ -478,7 +643,9 @@ public:
 			}
 		}
 	}	
-	inline void reestimate_log_A(){
+/*!
+ * Reestimate log transition matrix
+ */	inline void reestimate_log_A(){
 		double sum = 0; 
 		for( int i=0; i<N; ++i ){
 			if( !fixArow[i] ){
@@ -494,36 +661,46 @@ public:
 		}
 	}
 	
-	//re-estimate B from model
-	virtual void reestimate_B(vector<obs_type> &O) = 0;
-	virtual void reestimate_log_B(vector<obs_type> &O) = 0;
+/*!
+ * Reestimate emission matrix	
+ */	virtual void reestimate_B(vector<obs_type> &O) = 0;
+/*!
+ * Reestimate log emission matrix	
+ */	virtual void reestimate_log_B(vector<obs_type> &O) = 0;
 	
-	//Re-estimate HMM
-	inline void reestimate(vector<obs_type> &O){ 
+/*!
+ * Reestimate model
+ */	inline void reestimate(vector<obs_type> &O){ 
 		if( !fixpi ){ reestimate_pi(); }
 		if( !fixA ){ reestimate_A(); }
 		if( !fixB ){ reestimate_B(O); }
 	}
-	inline void reestimate_log(vector<obs_type> &O){ 
+/*!
+ * Reestimate log model
+ */	inline void reestimate_log(vector<obs_type> &O){ 
 		if( !fixpi ){ reestimate_log_pi(); }
 		if( !fixA ){ reestimate_log_A(); }
 		if( !fixB ){ reestimate_log_B(O); }
 	}
-	
-	//calc model likelihood
-	void evaluate(){
+/*!
+ * calc model likelihood
+ */	void evaluate(){
 		lhood = 0;
 		for(int t=0; t<T; ++t){ lhood -= log( c[t] ); }
 	}
-	void evaluate_log(){
+/*!
+ * calc model likelihood from log parameters
+ */	void evaluate_log(){
 		lhood = 0;
 		for(int i=0; i<N; ++i){ 
 			if(i==0){ lhood = alpha[i][T-1]; } else { lsum(lhood, alpha[i][T-1]); }; 
 		}
 	}
-	
-	//calc model likelihood for observation seq O
-	void evaluate(vector<obs_type> &O){
+public:	
+/*!
+* calc model likelihood for observation seq O
+* @param[in] O observations
+*/ void evaluate(vector<obs_type> &O){
 		
 		T = O.size();
 		alpha = vector<vector<double> >(N, vector<double>(T,0) ); 	
@@ -532,27 +709,22 @@ public:
 		evaluate();
 		
 	}
-	
-	//most likely state sequence in sense of dynamic programing
-	/* Possible sequences
-	 * aaa
-	 * aab
-	 * aba
-	 * abb
-	 * baa
-	 * bab
-	 * ...
-	 * 
-	 * Choose one with highest prob
-	 * */
-	 //Update dynamic programming matrix
-	 inline void compute_delta0(obs_type O){
+protected:
+
+/*!
+ * Start dynamic programming matrix
+ * @param[in] O observation
+ */	inline void compute_delta0(obs_type O){
 		for(int i=0; i<N; ++i){ 
 			delta[i][0] = logpi[i] + log_pB(i,O);
 			delta2[i][0] = 0;
 		}	
 	 }
-	 inline void update_delta(obs_type O, int t){
+/*!
+ * Update dynamic programming matrix
+ * @param[in] O observation
+ * @param[in] t time
+ */	inline void update_delta(obs_type O, int t){
 		double tmp, tmp2;
 		for(int i=0; i<N; ++i){
 			tmp = delta[0][t-1] + logA[0][i] + log_pB(i,O);
@@ -567,8 +739,10 @@ public:
 			delta[i][t] = tmp;
 		}
 	}
-	
-	inline void backtrack_viterbi(int last){
+/*!
+ * Dynamic programming state sequence
+ * @param[in] last Final observation time
+ */	inline void backtrack_viterbi(int last){
 		double best = delta[0][last-1];
 		state[ last-1 ] = 0;
 		for(int i=1; i<N; ++i){ 
@@ -578,8 +752,12 @@ public:
 			state[t-1] = delta2[state[t]][ t]; 
 		}
 	}
-	
-	void set_state_viterbi(vector<obs_type> &O){
+public:
+/*!
+* calc most likely state sequence for observation sequence O using Viterbi algorithm. Call set_max first to use max lhood estimates
+* for A, B, pi.
+* @param[in] O observations
+*/ void set_state_viterbi(vector<obs_type> &O){
 		
 		setup_delta(O.size());
 		compute_delta0(O[0]);	
@@ -591,21 +769,11 @@ public:
 	}
 
 	
-	//most likely state sequence in E-M sense
-	/* Possible sequences
-	 * aaa
-	 * aab
-	 * aba
-	 * abb
-	 * baa
-	 * bab
-	 * ...
-	 * gives
-	 * P(a,0) P(a,1) P(a,2) ...
-	 * P(b,0) P(a,1) P(a,2) ...
-	 * Choose most likely state at each time
-	 * */
-	void set_state(){
+
+protected:
+/*!
+* Choose most likely state at each time
+ */	void set_state(){
 		for(int t=0; t<T; ++t){ 
 			state[t] = 0;
 			double best = alpha[0][t];
@@ -614,22 +782,31 @@ public:
 			}
 		}
 	}
-	//Most likely state given the model to explain O.
-	void set_state(vector<obs_type> &O){
+public:
+/*!
+* calc most likely state sequence for observation sequence O using DP algorithm. Call set_max first to use max lhood estimates
+* for A, B, pi.
+* @param[in] O observations
+*/ void set_state(vector<obs_type> &O){
 		setup(O);
 		compute_alpha(O);
 		set_state();
 	}
 	
 	
-	void printA(){
+/*!
+* print A to stdout
+*/ 	void printA(){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<N; ++j){
 				cout << A[i][j] << " ";
 			} cout << "\n";
 		}
 	}
-	void printA(ofstream &ofile){
+/*!
+* print A to file
+* @param[in] ofile file stream
+*/  void printA(ofstream &ofile){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<N; ++j){
 				ofile << A[i][j] << " ";
@@ -637,14 +814,19 @@ public:
 		}
 	}
 	
-	void printB(){
+/*!
+* print B to stdout
+*/	void printB(){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<B[i].size(); ++j){
 				cout << B[i][j] << " ";
 			} cout << "\n";
 		}
 	}
-	void printB(ofstream &ofile){
+/*!
+* print B to file
+* @param[in] ofile file stream
+*/  void printB(ofstream &ofile){
 		for(int i=0; i<N; ++i){
 			for(int j=0; j<B[i].size(); ++j){
 				ofile << B[i][j] << " ";
@@ -652,20 +834,29 @@ public:
 		}
 	}
 
-	void printpi(){
+/*!
+* print pi to stdout
+*/	void printpi(){
 		for(int i=0; i<N; ++i){
 				cout << pi[i] << " ";
 		} cout << "\n";
 	}
-	void printpi(ofstream &ofile){
+/*!
+* print pi to file
+* @param[in] ofile file stream
+*/  void printpi(ofstream &ofile){
 		for(int i=0; i<N; ++i){
 				ofile << pi[i] << " ";
 		} ofile << "\n";
 	}
 
 	
-	//Fit HMM to obs seq O
-	vector<double> fit(vector<obs_type> &O, double eps, bool uselog=true){
+/*!
+* Fit a HMM to observation sequence. Returns { num_iters, max_log_lhood }
+* @param[in] O observation sequence
+* @param[in] eps EM stopping precision
+* @param[in] uselog If false try to avoid using log probabilities, can have numerical issues!
+*/  vector<double> fit(vector<obs_type> &O, double eps, bool uselog=true){
 		
 		setup(O);
 		
@@ -765,18 +956,16 @@ public:
 		vector<double> ret = { (double) iters, old_lP };
 		return ret;
 	}
-	
-	///////////////////////////////
-	//  Use HMM to generate seq  //
-	///////////////////////////////
-	//Initial state
-	discrete_distribution<int> setup_distpi(){
+protected:
+/*!
+* Random initial state
+*/  discrete_distribution<int> setup_distpi(){
 		discrete_distribution<int> pi_dist(pi.begin(), pi.end());
 		return pi_dist;
-	}
-					
-	//Transitions
-	vector< discrete_distribution<int> > setup_distA(){
+	}				
+/*!
+* Random transition
+*/  vector< discrete_distribution<int> > setup_distA(){
 		vector< discrete_distribution<int> > A_dist;
 		for(int i=0; i<N; ++i){
 			vector<double> a_b(N);
@@ -789,11 +978,18 @@ public:
 		return A_dist;
 	}
 	
-	//generate observations
-	virtual obs_type gen_obs(int state) = 0;
-	
-	//Generate observation sequence from HMM
-	void generate_seq(vector<obs_type> &O, int T, bool print = false){	
+/*!
+* Random emission
+* @param[in] state Emission from this state
+*/  virtual obs_type gen_obs(int state_) = 0;
+
+public:	
+/*!
+* Generate observation sequence from HMM
+* @param[out] O observation sequence
+* @param[in] T number of observations to generate
+* @param[in] print If true print O to stdout
+*/ 	void generate_seq(vector<obs_type> &O, int T, bool print = false){	
 
 		O.resize(T);
 		//initial state

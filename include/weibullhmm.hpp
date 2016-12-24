@@ -8,10 +8,10 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with weibull emission
-//prob( Emit O | state i ) = ( k / lambda ) ( O / lambda )^(k-1)  exp( -(O / lambda )^k ) 
-//k_i = B[i][0]
-//lambda_i = B[i][1]
+/*! HMM with weibull emission \n
+//prob( Emit O | state i ) = ( k / lambda ) ( O / lambda )^(k-1)  exp( -(O / lambda )^k ) \n
+//k_i = B[i][0] \n
+//lambda_i = B[i][1]*/
 template <typename obs_type> class weibullHMM : public HMM<obs_type> {
 public:
 

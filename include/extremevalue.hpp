@@ -7,14 +7,21 @@
 using namespace std;
 
 namespace cdHMM {
-
+/*!
+ * Generalised Extreme Value probability density function
+ * */
 template <typename S> class GEV : public FuncNd<S>{
 public:
-	
+
+/*!
+ * Construct Generalised Extreme Value probability density function
+ * */	
 	GEV(){ 
 		this->dim = 3;
 	}
-	//From GNU Octave
+/*!
+ * Evaluate Generalised Extreme Value probability density function. Code from gnu octave
+ * */	
 	double eval(vector<double> &v){
       
 		  double mu = v[0]; 
@@ -76,7 +83,9 @@ public:
 	}
 
 };
-
+/*!
+ * Max likelihood estimate of Generalized Extreme Value distribution parameters given observation and model weights
+ * */
 template<typename T> fit_params extreme_solve(vector<T> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
 max_lhood_params mlp){
 	

@@ -10,17 +10,26 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with gamma emission
-//prob( Emit O | state i ) = ( beta_i^alpha_i / Gamma( alpha_i ) )   O^{alpha_i-1}   exp(-beta_i O) 
-//alpha_i = B[i][0]
-//beta_i = B[i][1]
-//requires x > 0 strictly
+/*! HMM with gamma emission \n
+//prob( Emit O | state i ) = ( beta_i^alpha_i / Gamma( alpha_i ) )   O^{alpha_i-1}   exp(-beta_i O) \n
+//alpha_i = B[i][0] \n
+//beta_i = B[i][1] \n
+//requires x > 0 strictly*/
 template <typename obs_type> class gammaHMM : public HMM<obs_type> {
-public:
-
+protected:
 vector<double> factor;
 vector<double> log_factor;
 
+void calc_factor(){
+	for(int i=0; i<this->N; ++i){
+
+		
+		factor[i] = exp( this->B[i][0] * log( this->B[i][1] ) - lgamma( this->B[i][0] ) );
+		log_factor[i] = ( this->B[i][0] * log( this->B[i][1] ) - lgamma( this->B[i][0] ) );
+		
+	}
+}
+public:
 	//Default
 	gammaHMM(){
 		this->mlp.dim = 1;
@@ -47,15 +56,7 @@ vector<double> log_factor;
 		this->type = "Gamma";
 	}
 	
-	void calc_factor(){
-		for(int i=0; i<this->N; ++i){
 
-			
-			factor[i] = exp( this->B[i][0] * log( this->B[i][1] ) - lgamma( this->B[i][0] ) );
-			log_factor[i] = ( this->B[i][0] * log( this->B[i][1] ) - lgamma( this->B[i][0] ) );
-			
-		}
-	}
 	
 	void info(){
 		cerr << this->type << " HMM" << endl;		

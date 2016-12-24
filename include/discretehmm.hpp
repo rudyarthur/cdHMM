@@ -7,8 +7,7 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with discrete emission
-//prob( Emit O | state i ) = B[i][O]
+/*! HMM with discrete emission. prob( Emit O | state i ) = B[i][O] */
 template <typename obs_type> class discreteHMM : public HMM<obs_type> {
 public:
 

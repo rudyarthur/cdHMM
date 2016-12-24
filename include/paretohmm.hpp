@@ -7,10 +7,10 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with exponential emission
-//prob( Emit O | state i ) = a xm^a / x^(a+1) x > xm else 0
-//xm_i = this->lb[i]
-//a_i = B[i][0]
+/*! HMM with exponential emission \n
+//prob( Emit O | state i ) = a xm^a / x^(a+1) x > xm else 0 \n
+//xm_i = this->lb[i] \n
+//a_i = B[i][0]*/
 template <typename obs_type> class paretoHMM : public HMM<obs_type> {
 public:
 

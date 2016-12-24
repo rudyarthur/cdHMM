@@ -7,9 +7,9 @@ using namespace std;
 
 namespace cdHMM {
 
-//HMM with exponential emission
-//prob( Emit O | state i ) = lambda exp( -lambda_i O ) 
-//lambda_i = B[i][0]
+/*! HMM with exponential emission \n
+prob( Emit O | state i ) = lambda exp( -lambda_i O ) \n
+lambda_i = B[i][0]*/
 template <typename obs_type> class exponentialHMM : public HMM<obs_type> {
 public:
 

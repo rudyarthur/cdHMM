@@ -95,7 +95,9 @@ vector<T> &data, map<char, int> &charmap, string read_type, int M=1
 			cout << endl; 
 		} else {
 			for(int i=0; i<hmm.N; ++i){
-				
+				for(int j=0; j<hmm.M; ++j){
+					cout << hmm.maxA[i][j] << "\t";
+				} cout << endl;
 			}
 		}
 		if( generate > 0){

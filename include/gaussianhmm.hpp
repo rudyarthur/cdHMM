@@ -7,16 +7,28 @@ using namespace std;
 
 namespace cdHMM {
 	
-//HMM with gaussian emission
-//prob( Emit O | state i ) = ( 1 / sigma sqrt(2 pi) )  exp( -(O - mu)*(O - mu)/2sigma^2 ) 
-//mu_i = B[i][0]
-//sigma_i = B[i][1]
+/*! HMM with gaussian emission \n
+//prob( Emit O | state i ) = ( 1 / sigma sqrt(2 pi) )  exp( -(O - mu)*(O - mu)/2sigma^2 ) \n
+//mu_i = B[i][0] \n
+//sigma_i = B[i][1]*/
 template <typename obs_type> class gaussianHMM : public HMM<obs_type> {
+protected:
+	//Avoid recomputing normalization
+	vector<double> factor;
+	vector<double> log_factor;
+
+	void calc_factor(){
+		for(int i=0; i<this->N; ++i){
+		
+			factor[i] = (1.0 / ( this->B[i][1] * sqrt(2*M_PI) ) );
+			log_factor[i] = -log( this->B[i][1] * sqrt(2*M_PI) );
+			
+		}
+	}
+	
 public:
 
-//Avoid recomputing normalization
-vector<double> factor;
-vector<double> log_factor;
+
 
 	//Default
 	gaussianHMM(){
@@ -41,14 +53,6 @@ vector<double> log_factor;
 		cerr << "sigma_i = B[i][1]" << endl;
 	}
 	
-	void calc_factor(){
-		for(int i=0; i<this->N; ++i){
-		
-			factor[i] = (1.0 / ( this->B[i][1] * sqrt(2*M_PI) ) );
-			log_factor[i] = -log( this->B[i][1] * sqrt(2*M_PI) );
-			
-		}
-	}
 	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );

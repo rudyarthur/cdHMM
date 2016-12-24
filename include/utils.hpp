@@ -23,18 +23,25 @@ using namespace std;
 
 namespace cdHMM {
 
-struct max_lhood_params {
-	
-	int dim;
-	//start vector (start range for brent or start point for simplex dim = x_start.size() ) 
-	vector<double> x_start;
-	//stopping criteria
-	double eps;
-	int max_iter;
+ /*!
+  * Max lhood solver parameters
+  * */
+class max_lhood_params {
+public:
+	int dim; /*!<number of parameters*/
+	vector<double> x_start; /*!<start vector (start range for brent or start point for simplex dim = x_start.size() ) */
+	double eps;	/*!<stopping criteria*/
+	int max_iter; /*!<maximum number of iterations*/
 	
 };
 
+ /*!
+  * Sort vector of pairs based on first member
+  * */
 template<typename S, typename T> bool pair_sort_first (pair<S,T> i, pair<S,T> j) { return (i.first>j.first); }
+ /*!
+  * Sort vector of pairs based on second member
+  * */
 template<typename S, typename T> bool pair_sort_second (pair<S,T> i, pair<S,T> j) { return (i.second>j.second); }
 
 //a = log x
@@ -49,6 +56,9 @@ template<typename S, typename T> bool pair_sort_second (pair<S,T> i, pair<S,T> j
 // if
 // b = -inf = log(0)
 // a = log(x + 0) = log(x) = a
+ /*!
+  * Compute log(a + b) given log(a) and b
+  * */
 void lsum(double &a, double b){ 
 	if( a == -numeric_limits<double>::infinity() ){ 
 		a = b;
@@ -60,7 +70,9 @@ void lsum(double &a, double b){
 		}
 	} 
 }
-
+ /*!
+  * Compute log(a - b) given log(a) and b
+  * */
 void ldiff(double &a, double b){ 
 	if( a > b ){
 		a += log ( 1.0  - exp(b - a) ); 
@@ -71,10 +83,7 @@ void ldiff(double &a, double b){
 	}
 }
 
-/* v is a vector of positive and negative values
- * safe log sum returns
- *  ( sign(sum(v))   ,    | log( | sum(v, v>0) - sum(v, v<0) | ) | )
- * */
+/*! v is a vector of positive and negative values. Returns ( sign(sum(v)) , | log( | sum(v, v>0) - sum(v, v<0) | ) | )*/
 pair<int, double> safe_log_sum(vector<double> &v){
 	int t = 0;
     double pos = (v[t] >= 0) ? log( v[t] ) : -numeric_limits<double>::infinity(); //log v
@@ -99,10 +108,8 @@ pair<int, double> safe_log_sum(vector<double> &v){
     return make_pair(1,0); 
 }
 
-/* v is a vector of positive and negative values
- * add is a vector of ( log(a0), log(a1), ... ) := log(a)
- * safe log sum returns
- *  ( sign(sum(v))   ,    | log( | sum(ai*vi, v>0) - sum(ai*vi, v<0) | ) | )
+/*! v is a vector of positive and negative values, add is a vector of ( log(a0), log(a1), ... ) := log(a).
+ * Returns ( sign(sum(v))   ,    | log( | sum(ai*vi, v>0) - sum(ai*vi, v<0) | ) | )
  * */
 pair<int, double> safe_log_sum(vector<double> &v, vector<double> &add){
 	int t = 0;

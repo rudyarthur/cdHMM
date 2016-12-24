@@ -7,14 +7,14 @@
 using namespace std;
 
 namespace cdHMM {
-
+/*!
+ * Weibull probability density function
+ * */
 template <typename S> class Weibull : public Func1d<S>{
 public:
-	
-	Weibull(){ 
-		this->dim = 1;
-	}
-	
+/*!
+ * Evaluate Weibull probability density function
+ * */
 	double eval(double k){
 			
 		  double ElnO = 0;
@@ -47,6 +47,9 @@ public:
 
 };
 
+/*!
+ * Max likelihood estimate of Weibull distribution parameters given observation and model weights
+ * */
 template <typename T> fit_params weibull_solve(vector<T> &O, vector< vector<double> > &gamma, vector<double> &sumgamma, int i,
 max_lhood_params mlp){
 	
