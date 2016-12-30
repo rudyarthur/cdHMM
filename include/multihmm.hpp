@@ -48,13 +48,21 @@ bool setup;
 		}
 	}
 	
+	void getB(){
+		
+		if(this->maxB.size() != this->N){ this->maxB = vector< vector<double> >( this->N, vector<double>(this->M, 0) ); }
 
-	
-	void initB(){
-		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 0) );
-		for(int i=0; i<hmm.size(); ++i){ hmm[i]->init(); }
+		double add = 0;
+		for(int h=0; h<hmm.size(); ++h){
+			for(int i=0; i<hmm[h]->N; ++i){
+				for(int j=0; j<hmm[h]->M; ++j){
+					this->B[i+add][j] = hmm[h]->B[i][j];
+				}
+			}
+			add += hmm[h]->N;
+		}
+		
 	}
-	
 	void setB(vector<vector<double> > &inB){
 		
 		this->B = inB;
@@ -69,22 +77,15 @@ bool setup;
 		}
 		
 	}
-	void getB(){
-		
-		if(this->maxB.size() != this->N){ this->maxB = vector< vector<double> >( this->N, vector<double>(this->M, 0) ); }
-
-		double add = 0;
-		for(int h=0; h<hmm.size(); ++h){
-			for(int i=0; i<hmm[h]->N; ++i){
-				for(int j=0; j<hmm[h]->M; ++j){
-					this->B[i+add][j] = hmm[h]->B[i][j];
-					this->maxB[i+add][j] = hmm[h]->maxB[i][j];
-				}
-			}
-			add += hmm[h]->N;
-		}
-		
+	
+	void initB(){
+		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 0) );
+		for(int i=0; i<hmm.size(); ++i){ hmm[i]->init(); }
+		getB();
 	}
+	
+
+
 	void sort_params(){
 		for(int i=0; i<hmm.size(); ++i){
 			hmm[i]->sort_params();

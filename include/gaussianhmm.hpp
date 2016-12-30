@@ -58,7 +58,7 @@ public:
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 		for(int i=0; i<this->N; ++i){
 			this->B[i][0] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
-			this->B[i][1] = static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
+			this->B[i][1] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
 		}
 		calc_factor();
 	}
@@ -75,6 +75,8 @@ public:
 	void reestimate_B(vector<obs_type> &O){ 
 		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+			if( this->sumgamma[i] == 0 ){ continue; }
+			
 			this->B[i][0] = 0;  
 			this->B[i][1] = 0;
 			

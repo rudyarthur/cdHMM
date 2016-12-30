@@ -63,7 +63,8 @@ public:
 		}
 		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
-
+			if( this->sumgamma[i] == 0 ){ continue; }
+			
 			double av = 0;
 			for(int t=0; t<O.size(); ++t){
 				av += (this->logO[t] - log(this->lb[i])) * this->gamma[i][t];

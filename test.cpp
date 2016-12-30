@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include "cdhmm.hpp" 
 
+
 using namespace std;
 using namespace cdHMM;
 
@@ -84,8 +85,8 @@ int num_obs, double eps, int num_restarts){
 	//Generate observation sequence with these paramters
 	hmm->init();
 
-	hmm->A = A;
-	hmm->pi = pi; 
+	hmm->setA( A );
+	hmm->setpi( pi ); 
 	hmm->setB( B ); 
 
 	vector<T> O(num_obs);
@@ -97,6 +98,7 @@ int num_obs, double eps, int num_restarts){
 	for(int i=0; i<num_restarts; ++i){
 		cerr << ".";
 		hmm->init();
+		//hmm->print_iter = true;
 		hmm->fit(O, eps);
 		hmm->sortparams();
 	}
@@ -409,15 +411,10 @@ int main(int argc,char **argv){
 
 		pi[0] = 0.6; pi[1] = 0.2; pi[2] = 0.2;
 
-		
-		vector<vector<double> > Bexp(1, vector<double>(1));
-		vector<vector<double> > Blognorm(1, vector<double>(2));
-		vector<vector<double> > Bnorm(1, vector<double>(2));
-			
 	
-		exponentialHMM<double> hmm_exp(1,0,hmm_max_iters); hmm_exp.B = Bexp;
-		lognormalHMM<double> hmm_lognorm(1,0,hmm_max_iters); hmm_lognorm.B = Blognorm;
-		gaussianHMM<double> hmm_norm(1,0,hmm_max_iters); hmm_norm.B = Bnorm;
+		exponentialHMM<double> hmm_exp(1,0,hmm_max_iters); 
+		lognormalHMM<double> hmm_lognorm(1,0,hmm_max_iters); 
+		gaussianHMM<double> hmm_norm(1,0,hmm_max_iters);
 		vector< HMM<double>* > hmms = { &hmm_exp, &hmm_lognorm, &hmm_norm };
 		
 		multiHMM<double> hmm(hmms,0,hmm_max_iters);

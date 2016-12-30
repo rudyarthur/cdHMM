@@ -51,6 +51,8 @@ public:
 	void reestimate_B(vector<obs_type> &O){ 
 
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+			if( this->sumgamma[i] == 0 ){ continue; }
+			
 			this->B[i][0] = 0; 
 			for( int t=0; t<this->T; ++t){
 				this->B[i][0] += this->gamma[i][t] * O[t];
@@ -73,6 +75,8 @@ public:
 			this->reestimate_B(O);
 		} else {
 			for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+				if( this->sumgamma[i] == 0 ){ continue; }
+			
 				this->B[i][0] = 0;  
 				
 				this->B[i][0] = this->gamma[i][0] + this->logO[0];

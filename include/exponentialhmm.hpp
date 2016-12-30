@@ -38,6 +38,9 @@ public:
 	
 	void initB(){
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
+		for(int i=0; i<this->N; ++i){
+			this->B[i][0] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
+		}
 	}
 
 	
@@ -51,7 +54,9 @@ public:
 	//re-estimate B from model
 	void reestimate_B(vector<obs_type> &O){ 
 
-		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){ 			
+			if( this->sumgamma[i] == 0 ){ continue; }
+
 			this->B[i][0] = 0; 
 			for( int t=0; t<this->T; ++t){
 				this->B[i][0] += this->gamma[i][t] * (O[t]-this->lb[i]);
@@ -63,8 +68,8 @@ public:
 	}
 	void reestimate_log_B(vector<obs_type> &O){ 
 
-		if( !this->set_logO){ this->calc_logO(O); }
-		if( this->no_logO ){ 
+		//if( !this->set_logO){ this->calc_logO(O); }
+		//if( this->no_logO ){ 
 			for(int i=0; i<this->N; ++i){
 				for( int t=0; t<this->T; ++t){
 					this->gamma[i][t] = exp(  this->gamma[i][t] );
@@ -72,8 +77,8 @@ public:
 				this->sumgamma[i] = exp( this->sumgamma[i] );
 			}
 			this->reestimate_B(O);
-		} else {
-			
+		/*} else {
+
 			for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
 				this->B[i][0] = 0;  
 				
@@ -87,7 +92,7 @@ public:
 			}}
 			this->calc_logB();
 			
-		}
+		}*/
 	}	
 
 	obs_type gen_obs(int state){

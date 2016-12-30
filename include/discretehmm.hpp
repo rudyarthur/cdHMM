@@ -64,7 +64,13 @@ public:
 					}
 				}
 			}
-			for(int i=0; i<this->N; ++i){ this->B[i][j] /= this->sumgamma[i]; }
+			for(int i=0; i<this->N; ++i){ 
+				if( this->sumgamma[i] == 0 ){ continue; }
+				this->B[i][j] /= this->sumgamma[i]; 
+			}
+			double norm = 0;
+			for(int i=0; i<this->N; ++i){ norm += this->B[i][j]; }
+			for(int i=0; i<this->N; ++i){ this->B[i][j] /= norm; }
 		}
 	}
 	inline void reestimate_log_B(vector<obs_type> &O){ 

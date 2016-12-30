@@ -25,6 +25,5 @@ test: test.cpp
 clean:
 	rm hmm
 	rm test 
-	rm text_analysis
 
 

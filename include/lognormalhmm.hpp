@@ -59,7 +59,7 @@ public:
 		this->B = vector< vector<double> >( this->N, vector<double>(this->M, 1) );
 		for(int i=0; i<this->N; ++i){
 			this->B[i][0] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
-			this->B[i][1] = static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
+			this->B[i][1] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
 		}
 		calc_factor();
 	}
@@ -82,17 +82,20 @@ public:
 		}
 		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+			if( this->sumgamma[i] == 0 ){ continue; }
+				
 			this->B[i][0] = 0;  
 			this->B[i][1] = 0;
 			
 			for( int t=0; t<this->T; ++t){
 				this->B[i][0] += this->gamma[i][t] * this->logO[t]; //E[O]
-			}
+			}		
 			this->B[i][0] /= this->sumgamma[i]; //E[O] = mu
 			for( int t=0; t<this->T; ++t){
 				this->B[i][1] += this->gamma[i][t] * ( this->logO[t] - this->B[i][0] )*( this->logO[t] - this->B[i][0] ); //E[ (O-mu)^2 ]
 			}
 			this->B[i][1] = sqrt(this->B[i][1] / this->sumgamma[i]); //sigma = sqrt( E[ (O-mu)^2 ] )
+
 		}}
 		this->calc_logB();
 		calc_factor();

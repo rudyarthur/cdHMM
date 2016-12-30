@@ -42,7 +42,9 @@ public:
 	//best state sequence
 	vector<unsigned> state;		/*!< Most likely state sequence */ 
 
-
+	//Some distributions are bounded below
+	vector<double> lb;	/*!<  Emission lower bound */
+	
 protected:	
 	//Parameters
 	vector< vector<double> > A; /*!< Transmission matrix */ 
@@ -72,9 +74,8 @@ protected:
 	bool no_logO;   /*!<  Cannot calculate log of observations */
 	vector<double> logO;	/*!< Log of observations */
 
-	//Some distributions are bounded below
-	vector<double> lb;	/*!<  Emission lower bound */
-	
+	double logsmall; /*!< Log of a small number (avoid log(0)) */
+
 	max_lhood_params mlp; /*!<  Parameters for max likelihood estimate solvers */
 
 public:
@@ -154,6 +155,14 @@ public:
 		lhood = maxlhood;
 	}
 /*!
+ * Clear max lhood values.
+ */ void clear_max(){
+		maxA = A;
+		maxB = B;
+		maxpi = pi;
+		maxlhood = -numeric_limits<double>::infinity();	
+	}
+/*!
  * Print info about this model to error console
  */ virtual void info() = 0;
 	
@@ -203,6 +212,8 @@ protected:
 		set_logO = false;
 		no_logO = false;
 		logO.resize(0);
+		//log(small)
+		logsmall = -1e12;
 	}
 
 /*!
@@ -258,16 +269,20 @@ public:
  * Set parameters to random initial starting values
  */ void init(){	
 		
+		set_logO = false;
+		no_logO = false;
+		logO.resize(0);
+		
 		double npi = 0;
 		for(unsigned i=0; i<N; ++i){
 			double norm = 0;
 			for(unsigned j=0; j<N; ++j){ 
-				A[i][j] += -1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX/2));
+				A[i][j] = static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
 				norm += A[i][j]; 
 			} 
 			for(int j=0; j<N; ++j){ A[i][j] /= norm; }
 			
-			pi[i] += -1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX/2));
+			pi[i] = static_cast <double> (rand()) /( static_cast <double> (RAND_MAX));
 			npi += pi[i]; 
 		}
 		for(unsigned i=0; i<N; ++i){ pi[i] /= npi; }
@@ -870,6 +885,7 @@ public:
 		int iters = 0;
 		do{
 			if( uselog ){
+
 				compute_log_alpha(O);
 				compute_log_beta(O); 
 				compute_log_gamma(O); 
@@ -880,11 +896,25 @@ public:
 				tmppi = pi;
 			
 				compute_log_sumgamma();
-				
+				for(int i=0; i<N; ++i){
+					if( sumgamma[i] == 0 ){
+						cerr << "problem with state " << i << endl;
+						for(int t=0; t<T; ++t){
+								cout << t << " " << i << " " << 
+								alpha[i][t] << " " << beta[i][t] << " " << gamma[i][t] << " " << sumgamma[i] << endl;
+						}
+						cout << "A "; printA();
+						cout << "pi "; printpi();
+						cout << "B "; printB();
+						cout << endl;
+						exit(1);
+					}
+				}
+
 				reestimate_log(O);
 				
 				evaluate_log();
-				
+								
 			} else {
 
 				compute_alpha(O); 
@@ -911,7 +941,22 @@ public:
 		    if( print_iter ){ 
 				cerr << "Iter: " << iters << " Lhood: " << lhood << endl; 
 			}
-		
+
+			if( lhood != lhood ){ 
+				cerr << "lhood = nan!" << endl; 
+				for(int t=0; t<T; ++t){
+					for(int i=0; i<N; ++i){
+						cout << t << " " << i << " " << 
+						alpha[i][t] << " " << beta[i][t] << " " << gamma[i][t] << " " << sumgamma[i] << endl;
+					}
+				}
+				cout << "A "; printA();
+				cout << "pi "; printpi();
+				cout << "B "; printB();
+				cout << endl;
+			exit(1); }
+
+
 			if(lhood > maxlhood){
 				maxlhood = lhood;
 				maxA = A;
@@ -937,7 +982,7 @@ public:
 						
 			if( iters < minIters ){	//at least minIters done
 				old_lP = lhood;
-			} else if( 
+			} else if(!done && 
 			iters < maxIters && //at most maxIters
 			fabs(lhood - old_lP) > eps && //lhood change
 			(dA > eps || dB > eps || dpi > eps ) //param change

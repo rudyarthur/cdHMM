@@ -44,6 +44,7 @@ void usage(){
 	cerr << "\t--min_hmm_iters :: maximum number of hmm iterations (default 0)\n";
 	cerr << "\t--max_hmm_iters :: minimum number of hmm iterations (default 1000)\n";
 	cerr << "\t--generate :: generate this many observations from the HMM(default 0)\n";
+	cerr << "\t--seed :: random number seed (default 12345)\n";
 	exit(1);
 }
 
@@ -137,6 +138,7 @@ int main(int argc,char **argv){
         {"min_hmm_iters",1,0,'n'},
         {"max_hmm_iters",1,0,'x'},
         {"generate",1,0,'y'},
+        {"seed",1,0,'s'},
         {0,0,0,0}
     };
 	
@@ -152,8 +154,9 @@ int main(int argc,char **argv){
 	int max_hmm_iters = 1000;
 	int generate = 0;
 	bool converttolower = false;
+	long int seed = 12345;
 	int M=-1;
-    while ((c = getopt_long(argc, argv, "i:c:g:e:m:l:p:a:d:1:o:b:w:v:r:q:n:x:y:j",loptions,NULL)) >= 0) {  
+    while ((c = getopt_long(argc, argv, "i:c:g:e:m:l:p:a:d:1:o:b:w:v:r:q:n:x:y:js:",loptions,NULL)) >= 0) {  
         switch (c)
         {
         case 'i': read_type = (string)optarg; break;
@@ -176,6 +179,7 @@ int main(int argc,char **argv){
         case 'n': min_hmm_iters = atoi(optarg); break;
         case 'x': max_hmm_iters = atoi(optarg); break;
         case 'y': generate = atoi(optarg); break;
+        case 's': seed = atoi(optarg); break;
         case '?': usage();
         default: 
 			usage();
@@ -186,6 +190,8 @@ int main(int argc,char **argv){
     
     string input = argv[optind];
 	cerr <<"Parsing " << input << " as " << read_type << endl; 
+	
+	srand(seed);
 	
 	map<char, int> charmap;
 	if( read_type == "double" ){

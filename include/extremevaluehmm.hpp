@@ -18,15 +18,12 @@ namespace cdHMM {
 //sigma_i = B[i][1] \n
 //kappa_i = B[i][2]*/
 template <typename obs_type> class extremevalueHMM : public HMM<obs_type> {
-protected:
-	double logsmall;
 
 public:
 	//Default
 	extremevalueHMM(){
 		this->setsize(0,3);
 		this->setIters(0,0);
-		logsmall = -1e6;
 		this->type = "Extremevalue";
 
 	}
@@ -35,7 +32,6 @@ public:
 	extremevalueHMM(int N_, int min_, int max_){
 		this->setsize(N_,3);
 		this->setIters(min_,max_);
-		logsmall = -1e6;
 		this->type = "Extremevalue";
 		
 	}
@@ -76,7 +72,7 @@ public:
 		double t = 1 + this->B[i][2] * ((O - this->B[i][0])/this->B[i][1]);
 
 		if(t < 0){ //no support here, no contrib to lhood
-			return logsmall; //-numeric_limits<double>::infinity();
+			return this->logsmall; //-numeric_limits<double>::infinity();
 		} 
 
 		return -( (1 / this->B[i][2]) + 1) * log(t)  - pow( t, -(1 / this ->B[i][2]) ) - log( this->B[i][1] );
@@ -87,7 +83,8 @@ public:
 
 		fit_params fp;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
-				
+			if( this->sumgamma[i] == 0 ){ continue; }
+			
 			this->mlp.x_start = this->B[i];
 
 			fp = extreme_solve(O, this->gamma, this->sumgamma, i, this->mlp);

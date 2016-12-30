@@ -60,6 +60,8 @@ public:
 
 		fit_params fp;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+			if( this->sumgamma[i] == 0 ){ continue; }
+			
 			this->B[i][0] = 0;  
 			this->B[i][1] = 0;
 			

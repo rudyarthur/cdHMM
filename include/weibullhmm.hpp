@@ -64,7 +64,8 @@ public:
 		}
 		fit_params fp;
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
-			
+			if( this->sumgamma[i] == 0 ){ continue; }
+						
 			fp = weibull_solve(O, this->gamma, this->sumgamma, i, this->mlp);
 			if( fp.iter == this->mlp.max_iter ){
 				cerr << "Max Likelihood estimate for weibull params failed to converge in " << fp.iter << " iterations" << endl;

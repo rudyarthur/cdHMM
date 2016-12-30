@@ -53,6 +53,7 @@ public:
 	void reestimate_B(vector<obs_type> &O){ 
 		
 		for(int i=0; i<this->N; ++i){ if(!this->fixBrow[i]){
+			if( this->sumgamma[i] == 0 ){ continue; }
 			
 			//These aren't Max Likelihood Estimates!
 			this->B[i][0] = 0;
