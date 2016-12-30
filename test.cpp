@@ -50,14 +50,6 @@ template <typename T> void output_check(HMM<T> *hmm, vector<vector<double> > &A,
 		cout << "\n";
 	}
 	cout << "Max B diff = " << max << endl;
-	cout << "pi fit :: pi true" << endl;
-	max = 0;
-	for(int i=0; i<N; ++i){
-			cout << hmm->maxpi[i] << "\t::\t" << pi[i] << "\n";
-			double diff = fabs(hmm->maxpi[i] - pi[i]);
-			if( diff > max ){ max = diff; }
-	} 
-	cout << "Max pi diff = " << max << endl;
 	
 }
 

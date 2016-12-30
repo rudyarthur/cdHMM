@@ -38,7 +38,7 @@ public:
 		for(unsigned i=0; i<this->N; ++i){
 			double norm = 0;
 			for(unsigned j=0; j<this->M; ++j){ 
-				this->B[i][j] += -1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX/2));
+				this->B[i][j] = 1 + static_cast <double> (rand()) /( static_cast <double> (RAND_MAX) );
 				norm += this->B[i][j]; 
 			} 
 			for(int j=0; j<this->M; ++j){ this->B[i][j] /= norm; }
@@ -65,12 +65,8 @@ public:
 				}
 			}
 			for(int i=0; i<this->N; ++i){ 
-				if( this->sumgamma[i] == 0 ){ continue; }
 				this->B[i][j] /= this->sumgamma[i]; 
 			}
-			double norm = 0;
-			for(int i=0; i<this->N; ++i){ norm += this->B[i][j]; }
-			for(int i=0; i<this->N; ++i){ this->B[i][j] /= norm; }
 		}
 	}
 	inline void reestimate_log_B(vector<obs_type> &O){ 
